@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Главная - LottoMeteoStats{% endblock %}
+
+{% block content %}
+    <section class="hero">
+        <div class="hero-content">
+            <h2><i class="fas fa-cloud-sun"></i> Анализ лотерей с погодными данными</h2>
+            <p class="subtitle">Собираем, анализируем, визуализируем</p>
+            <p class="current-date"><i class="far fa-calendar"></i> {{ current_date }}</p>
+        </div>
+    </section>
+
+    <section class="stats-overview">
+        <h3><i class="fas fa-tachometer-alt"></i> Общая статистика</h3>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-database"></i></div>
+                <div class="stat-info">
+                    <h4>Всего записей</h4>
+                    <p class="stat-number">{{ total_records }}</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                <div class="stat-info">
+                    <h4>Статус системы</h4>
+                    <p class="stat-status active">Активен</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-bolt"></i></div>
+                <div class="stat-info">
+                    <h4>Последнее обновление</h4>
+                    <p class="stat-time">Сегодня</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="features">
+        <h3><i class="fas fa-star"></i> Возможности проекта</h3>
+        <div class="features-grid">
+            {% for feature in features %}
+            <div class="feature-card">
+                <div class="feature-icon">
+                    {% if loop.index == 1 %}<i class="fas fa-chart-line"></i>
+                    {% elif loop.index == 2 %}<i class="fas fa-cloud-sun"></i>
+                    {% elif loop.index == 3 %}<i class="fas fa-calculator"></i>
+                    {% else %}<i class="fas fa-chart-pie"></i>{% endif %}
+                </div>
+                <h4>{{ feature }}</h4>
+                <p>Подробное описание функционала</p>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="quick-actions">
+        <h3><i class="fas fa-rocket"></i> Быстрые действия</h3>
+        <div class="actions">
+            <a href="#" class="btn btn-primary">
+                <i class="fas fa-sync-alt"></i> Обновить данные
+            </a>
+            <a href="#" class="btn btn-secondary">
+                <i class="fas fa-chart-bar"></i> Просмотр статистики
+            </a>
+            <a href="{{ url_for('admin_panel') }}" class="btn btn-success">
+                <i class="fas fa-cog"></i> Панель управления
+            </a>
+        </div>
+    </section>
+
+    <section class="next-steps">
+        <h3><i class="fas fa-tasks"></i> Следующие шаги</h3>
+        <ol class="steps-list">
+            <li>Настройка API ключей в файле .env</li>
+            <li>Добавление парсера для конкретной лотереи</li>
+            <li>Настройка регулярного сбора данных</li>
+            <li>Создание аналитических отчетов</li>
+        </ol>
+    </section>
+{% endblock %}
