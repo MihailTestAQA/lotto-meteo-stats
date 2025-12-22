@@ -59,3 +59,8 @@ class Config:
 
 # Создаем директории при импорте конфигурации
 Config.create_directories()
+
+# Погодные настройки
+WEATHER_API_BASE_URL = "https://api.openweathermap.org/data/2.5"
+WEATHER_CURRENT_URL = f"{WEATHER_API_BASE_URL}/weather"
+WEATHER_FORECAST_URL = f"{WEATHER_API_BASE_URL}/forecast"

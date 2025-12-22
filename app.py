@@ -1,10 +1,10 @@
-#  Главный файл приложения LottoMeteoStats
+# Создаем Главный файл приложения LottoMeteoStats
 
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from src.parsers.weather_parser import WeatherParser
 from config import Config
 import datetime
-import json
 
 # Создаем экземпляр Flask приложения
 app = Flask(__name__)
@@ -13,9 +13,11 @@ app.config.from_object(Config)
 # Инициализируем базу данных
 db = SQLAlchemy(app)
 
-# Модель данных (пока заглушка, детали добавим позже)
+# Модель данных
 class LotteryResult(db.Model):
     """Модель для хранения результатов лотереи"""
+    __tablename__ = 'lottery_results'
+    
     id = db.Column(db.Integer, primary_key=True)
     date = db.Column(db.Date, nullable=False)
     numbers = db.Column(db.String(100), nullable=False)
@@ -31,7 +33,7 @@ def index():
         'project_name': 'LottoMeteoStats',
         'current_date': datetime.datetime.now().strftime("%d.%m.%Y %H:%M"),
         'version': '1.0.0',
-        'total_records': 0,  # Просто 0 пока не создана БД
+        'total_records': 0,
         'features': [
             'Анализ лотерейных данных',
             'Интеграция с погодными API',
@@ -41,35 +43,61 @@ def index():
     }
     return render_template('index.html', **stats)
 
-@app.route('/api/health')
-def health_check():
-    """Проверка работоспособности API"""
-    return jsonify({
-        'status': 'healthy',
-        'timestamp': datetime.datetime.now().isoformat(),
-        'database': 'connected' if hasattr(db, 'engine') else 'not_configured'
-    })
+@app.route('/weather')
+def weather_page():
+    """Страница с погодой"""
+    return render_template('weather.html')
+
+@app.route('/api/weather/current')
+def get_current_weather():
+    """Получить текущую погоду"""
+    try:
+        parser = WeatherParser()
+        weather = parser.get_current_weather()
+        
+        if weather:
+            return jsonify({
+                'success': True,
+                'data': weather,
+                'message': 'Погодные данные получены'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Не удалось получить погодные данные'
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Ошибка: {str(e)}'
+        }), 500
+
+@app.route('/api/weather/test')
+def test_weather_api():
+    """Тестовый endpoint для проверки API"""
+    parser = WeatherParser()
+    weather = parser.get_current_weather()
+    
+    if weather:
+        return f"""
+        <h2>Погода в {weather['city']}:</h2>
+        <p>🌡️ Температура: {weather['temperature']}°C</p>
+        <p>🤔 Ощущается как: {weather['feels_like']}°C</p>
+        <p>☁️ Погода: {weather['weather_description']}</p>
+        <p>💧 Влажность: {weather['humidity']}%</p>
+        <p>📊 Давление: {weather['pressure_mmhg']} мм рт.ст. ({weather['pressure_hpa']} hPa)</p>
+        <p>💨 Ветер: {weather['wind_speed']} м/с</p>
+        """
+    else:
+        return "<h2>Не удалось получить погодные данные. Проверь API ключ.</h2>"
 
 @app.route('/admin')
 def admin_panel():
     """Панель администратора"""
-    return render_template('admin.html')
-
-# Команды для инициализации базы данных
-@app.cli.command("init-db")
-def init_db_command():
-    """Инициализировать базу данных"""
-    db.create_all()
-    print("База данных инициализирована.")
-
-@app.cli.command("clear-db")
-def clear_db_command():
-    """Очистить базу данных"""
-    db.drop_all()
-    print("База данных очищена.")
+    return "Панель управления (в разработке)"
 
 if __name__ == '__main__':
-    # Запускаем сервер БЕЗ автоматического создания БД
     print("=" * 50)
     print("🎰 LottoMeteoStats запущен!")
     print(f"📅 {datetime.datetime.now().strftime('%d.%m.%Y %H:%M:%S')}")

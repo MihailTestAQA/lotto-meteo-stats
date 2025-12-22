@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %}Погода - LottoMeteoStats{% endblock %}
+
+{% block content %}
+<div class="weather-container">
+    <h2><i class="fas fa-cloud-sun"></i> Погодные данные</h2>
+    
+    <div class="weather-controls">
+        <button onclick="loadWeather()" class="btn btn-primary">
+            <i class="fas fa-sync-alt"></i> Обновить погоду
+        </button>
+        <div class="api-status">
+            <span id="apiStatus">Статус API: <i class="fas fa-spinner fa-spin"></i> Проверка...</span>
+        </div>
+    </div>
+    
+    <div id="weatherResult" class="weather-result">
+        <div class="loading" id="loading">
+            <i class="fas fa-spinner fa-spin"></i> Загружаем погодные данные...
+        </div>
+    </div>
+    
+    <div class="weather-info">
+        <h3><i class="fas fa-info-circle"></i> Информация о погодном API</h3>
+        <p>Для работы погодного функционала требуется API ключ от OpenWeatherMap:</p>
+        <ol>
+            <li>Зарегистрируйся на <a href="https://openweathermap.org/api" target="_blank">OpenWeatherMap</a></li>
+            <li>Получи бесплатный API ключ (1000 запросов/день)</li>
+            <li>Добавь ключ в файл <code>.env</code>: <code>WEATHER_API_KEY=твой_ключ</code></li>
+            <li>Перезапусти сервер</li>
+        </ol>
+        
+        <div class="test-links">
+            <h4>Тестовые ссылки:</h4>
+            <ul>
+                <li><a href="/api/weather/current">/api/weather/current</a> - JSON API</li>
+                <li><a href="/api/weather/test">/api/weather/test</a> - Тестовая страница</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<style>
+.weather-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.weather-controls {
+    display: flex;
+    gap: 1rem;
+    margin: 2rem 0;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.api-status {
+    padding: 0.5rem 1rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.weather-result {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    margin: 2rem 0;
+    min-height: 200px;
+}
+
+.weather-card {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.weather-item {
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+}
+
+.weather-item h4 {
+    color: #666;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.weather-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.loading {
+    text-align: center;
+    padding: 2rem;
+    color: #666;
+}
+
+.weather-info {
+    background: #e8f4fc;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-top: 2rem;
+}
+
+.test-links ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.test-links li {
+    margin: 0.5rem 0;
+}
+
+.test-links a {
+    color: #3498db;
+    text-decoration: none;
+}
+
+.test-links a:hover {
+    text-decoration: underline;
+}
+
+.error {
+    color: #e74c3c;
+    padding: 1rem;
+    background: #fde8e8;
+    border-radius: 4px;
+    margin: 1rem 0;
+}
+</style>
+
+<script>
+// Проверка статуса API
+async function checkApiStatus() {
+    try {
+        const response = await fetch('/api/weather/current');
+        const data = await response.json();
+        
+        const statusElement = document.getElementById('apiStatus');
+        if (data.success) {
+            statusElement.innerHTML = 'Статус API: <i class="fas fa-check-circle" style="color: #27ae60"></i> Работает';
+            loadWeather();
+        } else {
+            statusElement.innerHTML = `Статус API: <i class="fas fa-exclamation-triangle" style="color: #e74c3c"></i> Ошибка: ${data.message}`;
+        }
+    } catch (error) {
+        document.getElementById('apiStatus').innerHTML = 
+            'Статус API: <i class="fas fa-times-circle" style="color: #e74c3c"></i> Не доступен';
+    }
+}
+
+async function loadWeather() {
+    const loading = document.getElementById('loading');
+    const result = document.getElementById('weatherResult');
+    
+    loading.style.display = 'block';
+    result.innerHTML = '';
+    
+    try {
+        const response = await fetch('/api/weather/current');
+        const data = await response.json();
+        
+        if (data.success) {
+            const weather = data.data;
+           result.innerHTML = `
+                <div class="weather-card">
+                    <div class="weather-item">
+                        <h4><i class="fas fa-city"></i> Город</h4>
+                        <div class="weather-value">${weather.city}, ${weather.country}</div>
+                    </div>
+                    <div class="weather-item">
+                        <h4><i class="fas fa-thermometer-half"></i> Температура</h4>
+                        <div class="weather-value">${weather.temperature}°C</div>
+                        <small>Ощущается как ${weather.feels_like}°C</small>
+                    </div>
+                    <div class="weather-item">
+                        <h4><i class="fas fa-cloud"></i> Погода</h4>
+                        <div class="weather-value">${weather.weather_description}</div>
+                        <img src="https://openweathermap.org/img/wn/${weather.weather_icon}.png" alt="${weather.weather_main}">
+                    </div>
+                    <div class="weather-item">
+                        <h4><i class="fas fa-tint"></i> Влажность</h4>
+                        <div class="weather-value">${weather.humidity}%</div>
+                    </div>
+                    <div class="weather-item">
+                        <h4><i class="fas fa-tachometer-alt"></i> Давление</h4>
+                        <div class="weather-value">${weather.pressure_mmhg} мм рт.ст.</div>
+                        <small>(${weather.pressure_hpa} hPa)</small>
+                    </div>
+                    <div class="weather-item">
+                        <h4><i class="fas fa-wind"></i> Ветер</h4>
+                        <div class="weather-value">${weather.wind_speed} м/с</div>
+                    </div>
+                    <div class="weather-item">
+                        <h4><i class="fas fa-sun"></i> Восход/Закат</h4>
+                        <div style="font-size: 0.9rem;">
+                            🌅 ${new Date(weather.sunrise).toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'})}<br>
+                            🌇 ${new Date(weather.sunset).toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'})}
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top: 1rem; color: #666; font-size: 0.9rem;">
+                    <i class="far fa-clock"></i> Обновлено: ${new Date(weather.timestamp).toLocaleString('ru-RU')}
+                </div>
+            `;
+        } else {
+            result.innerHTML = `
+                <div class="error">
+                    <h4><i class="fas fa-exclamation-triangle"></i> Ошибка получения погоды</h4>
+                    <p>${data.message}</p>
+                    <p>Проверь API ключ в файле .env</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        result.innerHTML = `
+            <div class="error">
+                <h4><i class="fas fa-exclamation-triangle"></i> Ошибка загрузки</h4>
+                <p>${error.message}</p>
+            </div>
+        `;
+    } finally {
+        loading.style.display = 'none';
+    }
+}
+
+// Загружаем при открытии страницы
+document.addEventListener('DOMContentLoaded', checkApiStatus);
+</script>
+{% endblock %}
