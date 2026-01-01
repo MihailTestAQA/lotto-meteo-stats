@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block title %}Графики - LottoMeteoStats{% endblock %}
+
+{% block content %}
+<div class="container">
+    <header>
+        <h1><i class="fas fa-chart-line"></i> Графики и визуализация</h1>
+        <p class="subtitle">Визуальный анализ данных лотереи</p>
+    </header>
+    
+    <div class="graphs-container">
+        <div class="graph-card">
+            <h2><i class="fas fa-chart-bar"></i> Частота выпадения чисел</h2>
+            <div class="graph-wrapper">
+                <canvas id="frequencyChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="graph-card">
+            <h2><i class="fas fa-chart-pie"></i> Распределение по полям</h2>
+            <div class="graph-wrapper">
+                <canvas id="distributionChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="graph-card">
+            <h2><i class="fas fa-chart-area"></i> Динамика выпадений</h2>
+            <div class="graph-wrapper">
+                <canvas id="dynamicChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="graph-card">
+            <h2><i class="fas fa-thermometer-half"></i> Тепловая карта</h2>
+            <div class="graph-wrapper">
+                <canvas id="heatmapChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadGraphsData();
+});
+
+async function loadGraphsData() {
+    try {
+        const response = await fetch('/api/lottery/statistics');
+        const data = await response.json();
+        
+        if (data.success) {
+            createFrequencyChart(data.statistics);
+            createDistributionChart(data.statistics);
+            createDynamicChart(data.statistics);
+            createHeatmapChart(data.statistics);
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки данных:', error);
+    }
+}
+
+function createFrequencyChart(stats) {
+    const ctx = document.getElementById('frequencyChart').getContext('2d');
+    
+    // Готовим данные
+    const numbers = [];
+    const counts = [];
+    const colors = [];
+    
+    stats.all_numbers.slice(0, 20).forEach(item => {
+        numbers.push(item.number);
+        counts.push(item.count);
+        
+        // Разный цвет для горячих/холодных чисел
+        if (item.percentage > 5) colors.push('#e74c3c'); // горячие
+        else if (item.percentage > 3) colors.push('#f39c12'); // теплые
+        else colors.push('#3498db'); // холодные
+    });
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: numbers,
+            datasets: [{
+                label: 'Количество выпадений',
+                data: counts,
+                backgroundColor: colors,
+                borderColor: '#2c3e50',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Количество раз'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Числа'
+                    }
+                }
+            }
+        }
+    });
+}
+
+function createDistributionChart(stats) {
+    const ctx = document.getElementById('distributionChart').getContext('2d');
+    
+    new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['Горячие (>5%)', 'Теплые (3-5%)', 'Холодные (<3%)'],
+            datasets: [{
+                data: [40, 35, 25], // Примерные данные
+                backgroundColor: [
+                    '#e74c3c',
+                    '#f39c12',
+                    '#3498db'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+function createDynamicChart(stats) {
+    const ctx = document.getElementById('dynamicChart').getContext('2d');
+    
+    // Пример данных для динамики
+    const months = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн'];
+    const data1 = [12, 19, 3, 5, 2, 3];
+    const data2 = [8, 15, 6, 8, 4, 7];
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: months,
+            datasets: [
+                {
+                    label: 'Поле 1',
+                    data: data1,
+                    borderColor: '#9b59b6',
+                    backgroundColor: 'rgba(155, 89, 182, 0.1)',
+                    tension: 0.3
+                },
+                {
+                    label: 'Поле 2',
+                    data: data2,
+                    borderColor: '#3498db',
+                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                    tension: 0.3
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function createHeatmapChart(stats) {
+    const ctx = document.getElementById('heatmapChart').getContext('2d');
+    
+    // Пример данных для тепловой карты
+    const data = {
+        labels: ['1-5', '6-10', '11-15', '16-20'],
+        datasets: [{
+            label: 'Частота',
+            data: [
+                [10, 15, 8, 12],
+                [5, 9, 14, 7],
+                [12, 6, 11, 9],
+                [8, 13, 7, 10]
+            ],
+            backgroundColor: function(context) {
+                const value = context.dataset.data[context.dataIndex];
+                const alpha = value / 20;
+                return `rgba(231, 76, 60, ${alpha})`;
+            },
+            borderColor: '#c0392b',
+            borderWidth: 1
+        }]
+    };
+    
+    new Chart(ctx, {
+        type: 'matrix',
+        data: data,
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `Частота: ${context.raw}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    type: 'category',
+                    labels: ['Поле 1', 'Поле 2', 'Поле 1', 'Поле 2']
+                },
+                y: {
+                    type: 'category'
+                }
+            }
+        }
+    });
+}
+</script>
+
+<style>
+.graphs-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+    gap: 30px;
+    margin-top: 30px;
+}
+
+.graph-card {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.graph-wrapper {
+    height: 300px;
+    margin-top: 20px;
+    position: relative;
+}
+
+@media (max-width: 768px) {
+    .graphs-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .graph-card {
+        padding: 15px;
+    }
+}
+</style>
+{% endblock %}

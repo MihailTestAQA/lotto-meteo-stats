@@ -1,0 +1,21 @@
+{
+  "timestamp": "2025-12-22T20:48:42",
+  "city": "Москва",
+  "country": "RU",
+  "temperature": -4.17,
+  "feels_like": -10.6,
+  "temp_min": -4.76,
+  "temp_max": -4.07,
+  "pressure_hpa": 1014,
+  "pressure_mmhg": 760.6,
+  "humidity": 63,
+  "weather_main": "Clouds",
+  "weather_description": "пасмурно",
+  "weather_icon": "04n",
+  "wind_speed": 5.76,
+  "wind_deg": 341,
+  "cloudiness": 100,
+  "visibility": 10000,
+  "sunrise": "2025-12-22T08:58:04",
+  "sunset": "2025-12-22T15:58:04"
+}

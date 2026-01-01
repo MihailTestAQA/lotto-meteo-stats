@@ -18,9 +18,8 @@
             <nav class="navbar">
                 <a href="{{ url_for('index') }}"><i class="fas fa-home"></i> Главная</a>
                 <a href="{{ url_for('weather_page') }}"><i class="fas fa-cloud-sun"></i> Погода</a>
-                <a href="#"><i class="fas fa-chart-bar"></i> Аналитика</a>
-                <a href="#"><i class="fas fa-database"></i> Данные</a>
-                <a href="{{ url_for('admin_panel') }}"><i class="fas fa-cog"></i> Управление</a>
+                <a href="{{ url_for('lottery_page') }}"><i class="fas fa-ticket-alt"></i> Лотерея</a>
+                <a href="{{ url_for('admin_panel') }}"><i class="fas fa-cog"></i> Admin</a>
             </nav>
         </div>
     </header>
@@ -41,8 +40,8 @@
 
     <footer class="footer">
         <div class="container">
-            <p>&copy; 2024 LottoMeteoStats. Проект для анализа лотерейных данных.</p>
-            <p class="version">Версия: {{ version if version else '1.0.0' }}</p>
+            <p>&copy; 2025 LottoMeteoStats. Проект для анализа лотерейных данных.</p>
+            <p class="version">Версия: {{ version if version else '1.1.3' }}</p>
         </div>
     </footer>
 

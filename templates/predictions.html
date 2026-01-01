@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+
+{% block title %}Felix Pila - LottoMeteoStats{% endblock %}
+
+{% block content %}
+<div class="container">
+    <header>
+        <h1><i class="fas fa-crystal-ball"></i> Felix Pila</h1>
+        <p class="subtitle">"Счастливый шар" - прогнозы на основе статистики</p>
+    </header>
+    
+    <div class="predictions-container">
+        <div class="prediction-card">
+            <h2><i class="fas fa-magic"></i> Прогноз на следующий тираж</h2>
+            <div class="prediction-result">
+                <div class="predicted-numbers" id="predictedNumbers">
+                    <div class="loading">Расчет прогноза...</div>
+                </div>
+                <button onclick="generatePrediction()" class="btn-predict">
+                    <i class="fas fa-redo"></i> Обновить прогноз
+                </button>
+            </div>
+            <div class="prediction-info">
+                <p><i class="fas fa-info-circle"></i> Прогноз основан на анализе частоты выпадения чисел за последние 30 тиражей</p>
+            </div>
+        </div>
+        
+        <div class="prediction-stats">
+            <h3><i class="fas fa-chart-line"></i> Вероятности чисел</h3>
+            <div id="probabilitiesGrid" class="probabilities-grid">
+                <!-- Вероятности загрузятся -->
+            </div>
+        </div>
+        
+        <div class="prediction-history">
+            <h3><i class="fas fa-history"></i> История прогнозов</h3>
+            <div class="history-list" id="predictionHistory">
+                <!-- История -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    generatePrediction();
+    loadProbabilities();
+});
+
+async function generatePrediction() {
+    const container = document.getElementById('predictedNumbers');
+    container.innerHTML = '<div class="loading">Расчет прогноза...</div>';
+    
+    try {
+        const response = await fetch('/api/lottery/predictions');
+        const data = await response.json();
+        
+        if (data.success) {
+            displayPrediction(data.prediction);
+            addToHistory(data.prediction);
+        }
+    } catch (error) {
+        console.error('Ошибка:', error);
+        container.innerHTML = '<div class="error">Ошибка расчета прогноза</div>';
+    }
+}
+
+function displayPrediction(prediction) {
+    const container = document.getElementById('predictedNumbers');
+    container.innerHTML = '';
+    
+    // Поле 1
+    const field1 = document.createElement('div');
+    field1.className = 'prediction-field';
+    field1.innerHTML = '<div class="field-label">Поле 1:</div>';
+    
+    prediction.field_1.forEach(num => {
+        const numEl = document.createElement('div');
+        numEl.className = 'predicted-number hot';
+        numEl.textContent = num;
+        field1.appendChild(numEl);
+    });
+    
+    // Поле 2
+    const field2 = document.createElement('div');
+    field2.className = 'prediction-field';
+    field2.innerHTML = '<div class="field-label">Поле 2:</div>';
+    
+    prediction.field_2.forEach(num => {
+        const numEl = document.createElement('div');
+        numEl.className = 'predicted-number cold';
+        numEl.textContent = num;
+        field2.appendChild(numEl);
+    });
+    
+    container.appendChild(field1);
+    container.appendChild(field2);
+    
+    // Вероятность
+    const probability = document.createElement('div');
+    probability.className = 'prediction-probability';
+    probability.innerHTML = `<i class="fas fa-percentage"></i> Вероятность: ${prediction.probability}%`;
+    container.appendChild(probability);
+}
+
+async function loadProbabilities() {
+    try {
+        const response = await fetch('/api/lottery/probabilities');
+        const data = await response.json();
+        
+        if (data.success) {
+            displayProbabilities(data.probabilities);
+        }
+    } catch (error) {
+        console.error('Ошибка:', error);
+    }
+}
+
+function displayProbabilities(probabilities) {
+    const container = document.getElementById('probabilitiesGrid');
+    container.innerHTML = '';
+    
+    probabilities.forEach(item => {
+        const probItem = document.createElement('div');
+        probItem.className = 'probability-item';
+        probItem.innerHTML = `
+            <div class="prob-number">${item.number}</div>
+            <div class="prob-bar">
+                <div class="prob-fill" style="width: ${item.probability}%"></div>
+            </div>
+            <div class="prob-value">${item.probability}%</div>
+        `;
+        container.appendChild(probItem);
+    });
+}
+
+function addToHistory(prediction) {
+    const history = document.getElementById('predictionHistory');
+    const historyItem = document.createElement('div');
+    historyItem.className = 'history-item';
+    historyItem.innerHTML = `
+        <div class="history-time">${new Date().toLocaleString('ru-RU')}</div>
+        <div class="history-numbers">
+            ${prediction.field_1.join(', ')} | ${prediction.field_2.join(', ')}
+        </div>
+    `;
+    history.prepend(historyItem);
+}
+</script>
+
+<style>
+.predictions-container {
+    max-width: 800px;
+    margin: 30px auto;
+}
+
+.prediction-card {
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    margin-bottom: 30px;
+}
+
+.prediction-result {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.prediction-field {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.field-label {
+    font-weight: bold;
+    color: #6c757d;
+}
+
+.predicted-number {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: bold;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.predicted-number.hot {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+}
+
+.predicted-number.cold {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+}
+
+.btn-predict {
+    background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    border-radius: 50px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: all 0.3s;
+}
+
+.btn-predict:hover {
+    transform: scale(1.05);
+}
+
+.prediction-probability {
+    margin-top: 20px;
+    font-size: 18px;
+    color: #27ae60;
+    font-weight: bold;
+}
+
+.probabilities-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.probability-item {
+    text-align: center;
+}
+
+.prob-number {
+    width: 30px;
+    height: 30px;
+    background: #f8f9fa;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 5px;
+    font-weight: bold;
+}
+
+.prob-bar {
+    height: 10px;
+    background: #e9ecef;
+    border-radius: 5px;
+    overflow: hidden;
+    margin: 5px 0;
+}
+
+.prob-fill {
+    height: 100%;
+    background: #f39c12;
+    border-radius: 5px;
+}
+
+.prob-value {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.history-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.history-item {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.history-time {
+    color: #6c757d;
+    font-size: 14px;
+}
+
+.history-numbers {
+    font-family: monospace;
+    font-weight: bold;
+}
+</style>
+{% endblock %}

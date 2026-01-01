@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+
+{% block title %}Статистика - LottoMeteoStats{% endblock %}
+
+{% block content %}
+<div class="container">
+    <header>
+        <h1><i class="fas fa-chart-bar"></i> Статистика лотереи</h1>
+        <p class="subtitle">Анализ частоты выпадения чисел</p>
+    </header>
+    
+    <div class="stats-container">
+        <div class="stats-section">
+            <h2><i class="fas fa-sort-amount-down"></i> Топ-12 чисел</h2>
+            <div id="topNumbers" class="numbers-grid">
+                <!-- Данные загрузятся через JavaScript -->
+                <div class="loading">Загрузка статистики...</div>
+            </div>
+        </div>
+        
+        <div class="stats-section">
+            <h2><i class="fas fa-chart-pie"></i> Распределение</h2>
+            <div id="distributionChart" style="height: 300px;">
+                <canvas id="numbersChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="stats-section">
+            <h2><i class="fas fa-history"></i> История выпадений</h2>
+            <div class="history-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Число</th>
+                            <th>Последний раз</th>
+                            <th>Всего раз</th>
+                            <th>Частота</th>
+                        </tr>
+                    </thead>
+                    <tbody id="numbersHistory">
+                        <!-- Данные загрузятся -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Загрузка статистики при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    loadStatistics();
+});
+
+async function loadStatistics() {
+    try {
+        const response = await fetch('/api/lottery/statistics');
+        const data = await response.json();
+        
+        if (data.success) {
+            displayStatistics(data.statistics);
+            createChart(data.statistics);
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки статистики:', error);
+    }
+}
+
+function decodeUnicode(str) {
+    if (!str) return str;
+    return str.replace(/\\u[\dA-F]{4}/gi, 
+        match => String.fromCharCode(parseInt(match.replace(/\\u/g, ''), 16))
+    );
+}
+
+// При отображении данных используй:
+item.status_text = decodeUnicode(item.status_text);
+
+function displayStatistics(stats) {
+    // Топ-12 чисел
+    const topNumbers = document.getElementById('topNumbers');
+    topNumbers.innerHTML = '';
+    
+    // Берём первые 12 элементов
+    const top12 = stats.top_numbers.slice(0, 12); 
+    
+    top12.forEach((item, index) => {
+        const numDiv = document.createElement('div');
+        numDiv.className = 'number-item';
+        
+        // Разный цвет для позиций
+        let rankClass = '';
+        if (index < 3) rankClass = 'top-3';
+        else if (index < 6) rankClass = 'top-6';
+        else rankClass = 'top-12';
+        
+        numDiv.innerHTML = `
+            <div class="number-rank ${rankClass}">${index + 1}</div>
+            <div class="number-value">${item.number}</div>
+            <div class="number-count">${item.count} раз</div>
+            <div class="number-percent">${item.percentage}%</div>
+        `;
+        topNumbers.appendChild(numDiv);
+    });
+    
+    // История
+    const historyTable = document.getElementById('numbersHistory');
+    historyTable.innerHTML = '';
+    
+    stats.all_numbers.forEach(item => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><span class="number-badge">${item.number}</span></td>
+            <td>${item.last_draw || 'Нет данных'}</td>
+            <td>${item.count}</td>
+            <td>${item.percentage}%</td>
+        `;
+        historyTable.appendChild(row);
+    });
+}
+function createChart(stats) {
+    const ctx = document.getElementById('numbersChart').getContext('2d');
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: stats.top_numbers.map(item => item.number),
+            datasets: [{
+                label: 'Количество выпадений',
+                data: stats.top_numbers.map(item => item.count),
+                backgroundColor: '#9b59b6'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+</script>
+
+<style>
+.stats-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 20px;
+    margin-top: 30px;
+}
+
+.stats-section {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.numbers-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 4fr);
+    gap: 10px;
+}
+
+.number-item {
+    background: #f8f9fa;
+    padding: 12px; /* Уменьшил padding */
+    text-align: center;
+    border-radius: 8px;
+    border: 2px solid #9b59b6;
+    min-height: 80px; 
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.number-rank {
+    font-size: 11px; /* Уменьшил */
+    color: #6c757d;
+}
+
+.number-value {
+    font-size: 20px; /* Уменьшил шрифт */
+    font-weight: bold;
+    color: #9b59b6;
+    margin: 5px 0;
+}
+
+.number-count, .number-percent {
+    font-size: 12px; /* Уменьшил */
+}
+.number-rank.top-3 {
+    color: #e74c3c;
+    font-weight: bold;
+}
+
+.number-rank.top-6 {
+    color: #f39c12;
+    font-weight: bold;
+}
+
+.number-rank.top-12 {
+    color: #3498db;
+}
+
+.number-badge {
+    display: inline-block;
+    width: 30px;
+    height: 30px;
+    background: #9b59b6;
+    color: white;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 30px;
+    font-weight: bold;
+}
+
+.loading {
+    text-align: center;
+    padding: 40px;
+    color: #6c757d;
+}
+@media (max-width: 768px) {
+    .numbers-grid {
+        grid-template-columns: repeat(4, 1fr); /* 4 колонки на планшетах */
+    }
+}
+
+@media (max-width: 480px) {
+    .numbers-grid {
+        grid-template-columns: repeat(3, 1fr); /* 3 колонки на телефонах */
+    }
+}
+</style>
+{% endblock %}

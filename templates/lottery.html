@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Лотерейные данные - LottoMeteoStats</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        h1 {
+            color: #4a5568;
+            font-size: 2.5rem;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .control-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #4a5568;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 50px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        
+        .control-btn:hover {
+            background: #2d3748;
+            transform: scale(1.05);
+        }
+        
+        .control-btn.primary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .control-btn.refresh {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
+        .stats-info {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 10px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .stat-label {
+            color: #718096;
+            font-size: 0.9rem;
+        }
+        
+        .stat-value {
+            color: #4a5568;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        
+        .data-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+        }
+        
+        .loading i {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            color: #f093fb;
+        }
+        
+        .error {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        th {
+            background: #f7fafc;
+            padding: 15px;
+            text-align: left;
+            color: #4a5568;
+            border-bottom: 2px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+        }
+        
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e2e8f0;
+            color: #4a5568;
+        }
+        
+        tr:hover {
+            background: #f7fafc;
+        }
+        
+        .numbers-cell {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        
+        .number {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .number.field2 {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
+        .weather-cell {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .page-btn {
+            background: #e2e8f0;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .page-btn:hover {
+            background: #cbd5e0;
+        }
+        
+        .page-btn.active {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header-top {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .controls {
+                justify-content: center;
+            }
+            
+            table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-top">
+                <h1><i class="fas fa-ticket-alt"></i> Лотерейные данные</h1>
+                <div class="controls">
+                    <a href="/" class="control-btn">
+                        <i class="fas fa-home"></i> На главную
+                    </a>
+                    <button onclick="refreshData()" class="control-btn refresh">
+                        <i class="fas fa-sync-alt"></i> Обновить
+                    </button>
+                    <a href="/api/lottery/data" target="_blank" class="control-btn">
+                        <i class="fas fa-code"></i> API
+                    </a>
+                </div>
+            </div>
+            
+            <div class="stats-info">
+                <div class="stat-item">
+                    <span class="stat-label">Всего записей:</span>
+                    <span class="stat-value" id="totalRecords">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Последнее обновление:</span>
+                    <span class="stat-value" id="lastUpdate">-</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Источник данных:</span>
+                    <span class="stat-value" id="dataSource">-</span>
+                </div>
+            </div>
+        </header>
+        
+        <div class="data-container">
+            <div id="loading" class="loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <h2>Загрузка данных...</h2>
+                <p>Пожалуйста, подождите</p>
+            </div>
+            
+            <div id="error" class="error" style="display: none;"></div>
+            
+            <div id="dataTable" style="display: none;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Тираж</th>
+                            <th>Дата</th>
+                            <th>Время</th>
+                            <th>Поле 1</th>
+                            <th>Поле 2</th>
+                            <th>Температура</th>
+                            <th>Погода</th>
+                            <th>Давление</th>
+                            <th>Добавлен</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Данные будут здесь -->
+                    </tbody>
+                </table>
+                
+                <div class="pagination" id="pagination">
+                    <!-- Пагинация будет здесь -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentPage = 1;
+        const pageSize =30; //Количество строк на странице сайта.
+        let allData = [];
+        
+        // Загружаем данные при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            loadLotteryData();
+        });
+        
+        // Функция загрузки данных
+        async function loadLotteryData() {
+            try {
+                showLoading();
+                hideError();
+                hideTable();
+                
+                const response = await fetch('/api/lottery/data');
+                const result = await response.json();
+                
+                if (result.success) {
+                    allData = result.data || [];
+                    
+                    // Обновляем статистику
+                    document.getElementById('totalRecords').textContent = allData.length;
+                    document.getElementById('lastUpdate').textContent = formatDate(result.last_update);
+                    document.getElementById('dataSource').textContent = result.source === 'database' ? 'База данных' : 'Тестовые данные';
+                    
+                    if (allData.length > 0) {
+                        renderTable();
+                        setupPagination();
+                        hideLoading();
+                        showTable();
+                    } else {
+                        showError('Нет данных для отображения');
+                    }
+                } else {
+                    showError(result.message || 'Не удалось загрузить данные');
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                showError('Ошибка соединения с сервером');
+            }
+        }
+        
+        // Функция отображения таблицы
+         function renderTable() {
+        const start = (currentPage - 1) * pageSize;
+        const end = start + pageSize;
+        const pageData = allData.slice(start, end);
+        
+        const tableBody = document.getElementById('tableBody');
+        tableBody.innerHTML = '';
+        
+        pageData.forEach(item => {
+            const row = document.createElement('tr');
+            
+            const field1 = item.поле_1 || item.field_1 || [];
+            const field2 = item.поле_2 || item.field_2 || [];
+            
+            // Номера поля 1
+            const numbers1 = field1.map(num => 
+                `<div class="number">${num}</div>`
+            ).join('');
+            
+            // Номера поля 2
+            const numbers2 = field2.map(num => 
+                `<div class="number field2">${num}</div>`
+            ).join('');
+            
+            // Иконка погоды
+            const weatherIcon = getWeatherIcon(item.weather);
+            
+            // ИСПРАВЛЕНО: Время и дата (если приходят раздельно)
+            const fullDate = item.date || item.draw_date || '';
+            const time = item.time || '';
+            
+            row.innerHTML = `
+                <td><strong>${item.tirage || item.draw_number}</strong></td>
+                <td>${fullDate}</td>
+                <td>${time}</td>
+                <td>
+                    <div class="numbers-cell">
+                        ${numbers1}
+                    </div>
+                </td>
+                <td>
+                    <div class="numbers-cell">
+                        ${numbers2}
+                    </div>
+                </td>
+                <td>${item.temperature ? item.temperature + '°C' : '-'}</td>
+                <td class="weather-cell">
+                    ${weatherIcon}
+                    <span>${item.weather || '-'}</span>
+                </td>
+                <td>${item.pressure ? item.pressure + ' мм рт.ст.' : '-'}</td>
+                <td>${item.created_at || item.added_at || '-'}</td>
+            `;
+            
+            tableBody.appendChild(row);
+        });
+    }
+        
+        // Настройка пагинации
+        function setupPagination() {
+            const totalPages = Math.ceil(allData.length / pageSize);
+            const pagination = document.getElementById('pagination');
+            pagination.innerHTML = '';
+            
+            // Кнопка "Назад"
+            const prevBtn = document.createElement('button');
+            prevBtn.className = 'page-btn';
+            prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.onclick = () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderTable();
+                    setupPagination();
+                }
+            };
+            pagination.appendChild(prevBtn);
+            
+            // Номера страниц
+            for (let i = 1; i <= totalPages; i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+                pageBtn.textContent = i;
+                pageBtn.onclick = () => {
+                    currentPage = i;
+                    renderTable();
+                    setupPagination();
+                };
+                pagination.appendChild(pageBtn);
+            }
+            
+            // Кнопка "Вперед"
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'page-btn';
+            nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.onclick = () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderTable();
+                    setupPagination();
+                }
+            };
+            pagination.appendChild(nextBtn);
+        }
+        
+        // Вспомогательные функции
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+        
+        function showTable() {
+            document.getElementById('dataTable').style.display = 'block';
+        }
+        
+        function hideTable() {
+            document.getElementById('dataTable').style.display = 'none';
+        }
+        
+        function showError(message) {
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('error').textContent = message;
+            hideLoading();
+        }
+        
+        function hideError() {
+            document.getElementById('error').style.display = 'none';
+        }
+        
+        function refreshData() {
+            currentPage = 1;
+            loadLotteryData();
+        }
+        
+        function formatDate(dateString) {
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleString('ru-RU');
+            } catch {
+                return dateString;
+            }
+        }
+        
+        function getWeatherIcon(weather) {
+            if (!weather) return '<i class="fas fa-question"></i>';
+            
+            const weatherLower = weather.toLowerCase();
+            
+            if (weatherLower.includes('ясн')) return '<i class="fas fa-sun"></i>';
+            if (weatherLower.includes('пасмурн') || weatherLower.includes('облач')) return '<i class="fas fa-cloud"></i>';
+            if (weatherLower.includes('снег')) return '<i class="fas fa-snowflake"></i>';
+            if (weatherLower.includes('дожд')) return '<i class="fas fa-cloud-rain"></i>';
+            if (weatherLower.includes('туман')) return '<i class="fas fa-smog"></i>';
+            
+            return '<i class="fas fa-cloud"></i>';
+        }
+        
+        // Автообновление каждые 600 секунд
+        setInterval(refreshData, 600000);
+    </script>
+</body>
+</html>

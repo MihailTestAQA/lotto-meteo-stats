@@ -169,7 +169,6 @@ lotto-meteo-stats/
 │   ├── parsers/      # Парсеры лотерей и погоды
 │   ├── database/     # Работа с базой данных
 │   ├── analysis/     # Анализ данных
-│   └── utils/        # Вспомогательные функции
 ├── data/             # База данных и файлы
 └── migrations/       # Скрипты экспорта
 🔧 Используемые технологии
@@ -224,13 +223,13 @@ MIT License - смотри файл LICENSE
 Если есть вопросы или предложения - создайте Issue в репозитории.
 
 Проект создан для обучения и анализа данных
-EOF
+
 
 text
 
 ```bash
 
-cat > LICENSE << 'EOF'
+cat > LICENSE << 
 MIT License
 
 Copyright (c) 2024 LottoMeteoStats Project
@@ -252,4 +251,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-EOF

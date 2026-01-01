@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}Felix Pila Статистика - LottoMeteoStats{% endblock %}
+
+{% block content %}
+<div class="container">
+    <header>
+        <h1><i class="fas fa-magic"></i> Felix Pila Статистика</h1>
+        <p class="subtitle">Анализ связи погоды и выпадения чисел</p>
+    </header>
+    
+    <!-- Текущая погода -->
+    <div class="current-weather card">
+        <h2><i class="fas fa-cloud-sun"></i> Текущая погода</h2>
+        <div id="currentWeather">
+            Загрузка...
+        </div>
+    </div>
+    
+    <!-- Прогноз на основе погоды -->
+    <div class="prediction card">
+        <h2><i class="fas fa-crystal-ball"></i> Прогноз на сегодня</h2>
+        <p>На основе текущей погоды наиболее вероятные числа:</p>
+        <div id="weatherPrediction" class="numbers-grid">
+            Загрузка...
+        </div>
+    </div>
+    
+    <!-- Анализ связей -->
+    <div class="analysis card">
+        <h2><i class="fas fa-chart-network"></i> Анализ связей</h2>
+        <div class="filters">
+            <select id="weatherFilter">
+                <option value="">Все погоды</option>
+                <option value="ясно">Ясно</option>
+                <option value="пасмурно">Пасмурно</option>
+                <option value="дождь">Дождь</option>
+            </select>
+            <select id="tempFilter">
+                <option value="">Все температуры</option>
+                <option value="холодно">Холодно</option>
+                <option value="прохладно">Прохладно</option>
+                <option value="тепло">Тепло</option>
+            </select>
+            <button onclick="loadAnalysis()">Применить</button>
+        </div>
+        <div id="weatherAnalysis">
+            Загрузка анализа...
+        </div>
+    </div>
+    
+    <!-- Статистические выводы -->
+    <div class="insights card">
+        <h2><i class="fas fa-lightbulb"></i> Выводы Felix Pila</h2>
+        <div id="insightsList">
+            <div class="insight">
+                <i class="fas fa-sun"></i>
+                <h3>В ясную погоду чаще выпадают:</h3>
+                <p id="sunnyNumbers">Загрузка...</p>
+            </div>
+            <div class="insight">
+                <i class="fas fa-cloud-rain"></i>
+                <h3>В дождливую погоду чаще выпадают:</h3>
+                <p id="rainyNumbers">Загрузка...</p>
+            </div>
+            <div class="insight">
+                <i class="fas fa-temperature-low"></i>
+                <h3>При низком давлении чаще выпадают:</h3>
+                <p id="lowPressureNumbers">Загрузка...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Загрузка всех данных Felix Pila
+document.addEventListener('DOMContentLoaded', function() {
+    loadCurrentWeather();
+    loadFelixPilaPrediction();
+    loadAnalysis();
+    loadInsights();
+});
+
+async function loadCurrentWeather() {
+    try {
+        const response = await fetch('/api/weather/current');
+        const data = await response.json();
+        
+        if (data.success) {
+            const weather = data.data;
+            document.getElementById('currentWeather').innerHTML = `
+                <div class="weather-display">
+                    <div class="temp">${weather.temperature}°C</div>
+                    <div class="condition">${weather.weather_description}</div>
+                    <div class="details">
+                        <span><i class="fas fa-tachometer-alt"></i> ${weather.pressure_mmhg} мм рт.ст.</span>
+                        <span><i class="fas fa-wind"></i> ${weather.wind_speed} м/с</span>
+                    </div>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки погоды:', error);
+    }
+}
+
+async function loadFelixPilaPrediction() {
+    try {
+        const response = await fetch('/api/felix-pila/predict');
+        const data = await response.json();
+        
+        if (data.success) {
+            const container = document.getElementById('weatherPrediction');
+            container.innerHTML = '';
+            
+            data.prediction.numbers.forEach((item, index) => {
+                const numDiv = document.createElement('div');
+                numDiv.className = 'number-item felix-number';
+                numDiv.innerHTML = `
+                    <div class="number-value">${item.number}</div>
+                    <div class="number-prob">${item.probability}%</div>
+                    <div class="number-rank">${index + 1}</div>
+                `;
+                container.appendChild(numDiv);
+            });
+        }
+    } catch (error) {
+        console.error('Ошибка прогноза:', error);
+    }
+}
+
+async function loadAnalysis() {
+    const weather = document.getElementById('weatherFilter').value;
+    const temp = document.getElementById('tempFilter').value;
+    
+    try {
+        const response = await fetch(`/api/felix-pila/analysis?weather=${weather}&temp=${temp}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            displayAnalysis(data.analysis);
+        }
+    } catch (error) {
+        console.error('Ошибка анализа:', error);
+    }
+}
+
+function displayAnalysis(analysis) {
+    const container = document.getElementById('weatherAnalysis');
+    container.innerHTML = '';
+    
+    // Создаем таблицу или график
+    // ...
+}
+
+async function loadInsights() {
+    try {
+        const response = await fetch('/api/felix-pila/insights');
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('sunnyNumbers').textContent = 
+                data.insights.sunny.join(', ');
+            document.getElementById('rainyNumbers').textContent = 
+                data.insights.rainy.join(', ');
+            document.getElementById('lowPressureNumbers').textContent = 
+                data.insights.low_pressure.join(', ');
+        }
+    } catch (error) {
+        console.error('Ошибка выводов:', error);
+    }
+}
+</script>
+
+<style>
+.card {
+    background: white;
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    margin-bottom: 25px;
+}
+
+.weather-display {
+    text-align: center;
+    padding: 20px;
+}
+
+.weather-display .temp {
+    font-size: 3em;
+    color: #e74c3c;
+    font-weight: bold;
+}
+
+.weather-display .condition {
+    font-size: 1.5em;
+    color: #3498db;
+    margin: 10px 0;
+}
+
+.weather-display .details {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    color: #7f8c8d;
+}
+
+.felix-number {
+    background: linear-gradient(135deg, #8e44ad, #3498db);
+    color: white;
+    border: none;
+    position: relative;
+}
+
+.felix-number .number-prob {
+    font-size: 12px;
+    opacity: 0.9;
+}
+
+.felix-number .number-rank {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.insights {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.insight {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    border-left: 5px solid #9b59b6;
+}
+
+.insight i {
+    font-size: 2em;
+    color: #9b59b6;
+    margin-bottom: 15px;
+}
+
+.filters {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.filters select, .filters button {
+    padding: 10px 15px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+</style>
+{% endblock %}

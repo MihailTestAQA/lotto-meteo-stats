@@ -9,13 +9,14 @@ class LotteryParser:
     def __init__(self):
         self.lottery_url = "https://www.lotonews.ru/draws/archive/4x20"
         
-        # Абсолютный путь к БД (самый надежный вариант)
-        self.db_path = r'D:\VS_code\lotto-meteo-stats\data\lottery.db'
-        print(f"🎯 БД парсера: {self.db_path}")
+        # Создаем путь к папке data относительно этого файла
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        data_dir = os.path.join(base_dir, 'data')
         
         # Создаем папку data если её нет
-        import os
-        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+        os.makedirs(data_dir, exist_ok=True)
+        
+        self.db_path = os.path.join(data_dir, 'lottery.db')
     
     async def parse_and_save(self):
         """Парсит и сохраняет в БД совместимую с Flask"""

@@ -17,8 +17,9 @@ class Config:
     # Безопасность
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
     
-    # База данных
-    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'sqlite:///data/database.db')
+    # Путь к БД в папке data (База данных)
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'data', 'lottery.db') # Путь к БД
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # API ключи
