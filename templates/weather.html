@@ -144,7 +144,7 @@
             box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
         }
         
-        /* СТИЛИ ДЛЯ СТРАНИЦЫ ПОГОДЫ */
+        /* СТИЛИ ДЛЯ СТРАНИЦЫ ПОГОДЫ (ОБНОВЛЕННЫЕ) */
         .weather-header {
             background: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
@@ -200,82 +200,111 @@
             background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
         }
         
-        .weather-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 25px;
-            margin-bottom: 30px;
-        }
-        
-        .weather-card {
+        /* СТИЛИ ДЛЯ ТАБЛИЦЫ */
+        .weather-table-container {
             background: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
             padding: 30px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            text-align: center;
-        }
-        
-        .weather-card.main {
-            grid-column: 1 / -1;
-            background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
-        }
-        
-        .weather-icon {
-            font-size: 4rem;
-            margin-bottom: 20px;
-            color: #4facfe;
-        }
-        
-        .temperature {
-            font-size: 3.5rem;
-            font-weight: bold;
-            color: #2d3748;
-            margin-bottom: 10px;
-        }
-        
-        .feels-like {
-            color: #718096;
-            font-size: 1.2rem;
-            margin-bottom: 20px;
-        }
-        
-        .weather-description {
-            font-size: 1.5rem;
-            color: #4a5568;
             margin-bottom: 30px;
-            text-transform: capitalize;
+            overflow-x: auto;
         }
         
-        .weather-details {
+        .weather-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+        
+        .weather-table th {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .weather-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e2e8f0;
+            vertical-align: middle;
+        }
+        
+        .weather-table tr:hover {
+            background-color: #f7fafc;
+        }
+        
+        .weather-table tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+        
+        .weather-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        /* СТИЛИ ДЛЯ ИКОНОК В ТАБЛИЦЕ */
+        .weather-icon-cell {
+            font-size: 1.5rem;
+            text-align: center;
+            min-width: 60px;
+        }
+        
+        .temp-cell {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .positive-temp {
+            color: #e53e3e;
+        }
+        
+        .negative-temp {
+            color: #2b6cb0;
+        }
+        
+        .stats-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
             margin-top: 20px;
         }
         
-        .detail-item {
-            background: white;
-            padding: 20px;
+        .stat-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
             border-radius: 15px;
+            padding: 20px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
         
-        .detail-icon {
-            font-size: 2rem;
+        .stat-icon {
+            font-size: 2.5rem;
             margin-bottom: 10px;
             color: #4facfe;
         }
         
-        .detail-label {
+        .stat-label {
             color: #718096;
             font-size: 0.9rem;
             margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
-        .detail-value {
+        .stat-value {
             color: #4a5568;
-            font-size: 1.3rem;
+            font-size: 1.8rem;
             font-weight: bold;
+        }
+        
+        .last-update {
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: center;
         }
         
         .loading {
@@ -288,6 +317,12 @@
             font-size: 3rem;
             margin-bottom: 20px;
             color: #4facfe;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
         
         .error {
@@ -332,12 +367,15 @@
                 justify-content: center;
             }
             
-            .weather-card {
-                padding: 20px;
+            .weather-table th,
+            .weather-table td {
+                padding: 10px;
+                font-size: 0.85rem;
             }
             
-            .temperature {
-                font-size: 2.5rem;
+            .weather-icon-cell {
+                min-width: 40px;
+                font-size: 1.2rem;
             }
         }
         
@@ -364,6 +402,10 @@
             .control-btn {
                 width: 100%;
                 justify-content: center;
+            }
+            
+            .weather-table-container {
+                padding: 15px;
             }
         }
     </style>
@@ -422,112 +464,58 @@
             <!-- Заголовок погодной страницы -->
             <div class="weather-header">
                 <div class="weather-header-top">
-                    <h1 class="weather-title"><i class="fas fa-cloud-sun"></i> Погодные данные</h1>
+                    <h1 class="weather-title"><i class="fas fa-cloud-sun"></i> История погодных данных</h1>
                     <div class="weather-controls">
-                        <button onclick="refreshWeather()" class="control-btn primary">
+                        <button onclick="loadWeatherData()" class="control-btn primary">
                             <i class="fas fa-sync-alt"></i> Обновить
                         </button>
-                        <a href="/api/weather/current" target="_blank" class="control-btn">
-                            <i class="fas fa-code"></i> API
-                        </a>
-                        <a href="/api/weather/test" target="_blank" class="control-btn">
-                            <i class="fas fa-vial"></i> Тест
-                        </a>
+                        <button onclick="toggleAutoRefresh()" id="autoRefreshBtn" class="control-btn">
+                            <i class="fas fa-redo"></i> Автообновление: ВЫКЛ
+                        </button>
                     </div>
                 </div>
                 
-                <div class="weather-details" id="lastUpdateInfo" style="display: none;">
-                    <div class="detail-item">
-                        <div class="detail-icon"><i class="fas fa-clock"></i></div>
-                        <div class="detail-label">Последнее обновление</div>
-                        <div class="detail-value" id="lastUpdateTime">-</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-icon"><i class="fas fa-map-marker-alt"></i></div>
-                        <div class="detail-label">Город</div>
-                        <div class="detail-value" id="weatherCity">-</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-icon"><i class="fas fa-database"></i></div>
-                        <div class="detail-label">Источник</div>
-                        <div class="detail-value">OpenWeatherMap</div>
-                    </div>
+                <div class="stats-container" id="statsContainer">
+                    <!-- Статистика будет загружена через JavaScript -->
+                </div>
+                
+                <div class="last-update" id="lastUpdateInfo">
+                    <i class="fas fa-clock"></i> Последнее обновление: <span id="lastUpdateTime">загрузка...</span>
                 </div>
             </div>
             
+            <!-- Состояние загрузки -->
             <div id="loading" class="loading">
-                <i class="fas fa-spinner fa-spin"></i>
+                <i class="fas fa-spinner"></i>
                 <h2>Загрузка погодных данных...</h2>
                 <p>Пожалуйста, подождите</p>
             </div>
             
+            <!-- Сообщение об ошибке -->
             <div id="error" class="error" style="display: none;"></div>
             
+            <!-- Таблица с данными -->
             <div id="weatherContent" style="display: none;">
-                <div class="weather-grid">
-                    <div class="weather-card main">
-                        <div class="weather-icon" id="mainWeatherIcon">
-                            <i class="fas fa-cloud-sun"></i>
-                        </div>
-                        <div class="temperature" id="mainTemperature">-</div>
-                        <div class="feels-like" id="feelsLike">Ощущается как: -</div>
-                        <div class="weather-description" id="weatherDescription">-</div>
-                        
-                        <div class="weather-details">
-                            <div class="detail-item">
-                                <div class="detail-icon"><i class="fas fa-temperature-high"></i></div>
-                                <div class="detail-label">Максимум</div>
-                                <div class="detail-value" id="tempMax">-</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-icon"><i class="fas fa-temperature-low"></i></div>
-                                <div class="detail-label">Минимум</div>
-                                <div class="detail-value" id="tempMin">-</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-icon"><i class="fas fa-tachometer-alt"></i></div>
-                                <div class="detail-label">Давление</div>
-                                <div class="detail-value" id="pressure">-</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-icon"><i class="fas fa-tint"></i></div>
-                                <div class="detail-label">Влажность</div>
-                                <div class="detail-value" id="humidity">-</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="weather-card">
-                        <h3><i class="fas fa-wind"></i> Ветер</h3>
-                        <div class="weather-details">
-                            <div class="detail-item">
-                                <div class="detail-icon"><i class="fas fa-tachometer-alt"></i></div>
-                                <div class="detail-label">Скорость</div>
-                                <div class="detail-value" id="windSpeed">-</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-icon"><i class="fas fa-compass"></i></div>
-                                <div class="detail-label">Направление</div>
-                                <div class="detail-value" id="windDeg">-</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="weather-card">
-                        <h3><i class="fas fa-eye"></i> Видимость</h3>
-                        <div class="weather-details">
-                            <div class="detail-item">
-                                <div class="detail-icon"><i class="fas fa-road"></i></div>
-                                <div class="detail-label">Видимость</div>
-                                <div class="detail-value" id="visibility">-</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-icon"><i class="fas fa-cloud"></i></div>
-                                <div class="detail-label">Облачность</div>
-                                <div class="detail-value" id="cloudiness">-</div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="weather-table-container">
+                    <h3><i class="fas fa-history"></i> Последние 7 замеров погоды</h3>
+                    <table class="weather-table" id="weatherTable">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-calendar-alt"></i> Дата и время</th>
+                                <th><i class="fas fa-thermometer-half"></i> Температура</th>
+                                <th><i class="fas fa-temperature-low"></i> Ощущается</th>
+                                <th><i class="fas fa-cloud"></i> Погода</th>
+                                <th><i class="fas fa-tint"></i> Влажность</th>
+                                <th><i class="fas fa-tachometer-alt"></i> Давление</th>
+                                <th><i class="fas fa-wind"></i> Ветер</th>
+                                <th><i class="fas fa-eye"></i> Видимость</th>
+                                <th><i class="fas fa-city"></i> Город</th>
+                            </tr>
+                        </thead>
+                        <tbody id="weatherTableBody">
+                            <!-- Данные будут загружены через JavaScript -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </main>
@@ -540,106 +528,298 @@
     </div>
 
     <script>
-        // Функция загрузки погодных данных
-        async function loadWeather() {
+        let autoRefreshInterval = null;
+        let autoRefreshEnabled = false;
+        
+        // Функция для форматирования даты и времени
+        function formatDateTime(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleString('ru-RU', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        // Функция для определения иконки погоды по описанию
+        function getWeatherIcon(description) {
+            const desc = description.toLowerCase();
+            if (desc.includes('ясно') || desc.includes('солнечно')) return 'fas fa-sun';
+            if (desc.includes('облачно')) return 'fas fa-cloud';
+            if (desc.includes('пасмурно')) return 'fas fa-cloud';
+            if (desc.includes('дождь') || desc.includes('ливень')) return 'fas fa-cloud-rain';
+            if (desc.includes('снег')) return 'fas fa-snowflake';
+            if (desc.includes('туман') || desc.includes('дымка')) return 'fas fa-smog';
+            if (desc.includes('гроза')) return 'fas fa-bolt';
+            if (desc.includes('ветер')) return 'fas fa-wind';
+            return 'fas fa-cloud-sun';
+        }
+        
+        // Функция для направления ветра по тексту
+        function getWindIcon(direction) {
+            if (!direction) return 'fas fa-compass';
+            const dir = direction.toLowerCase();
+            if (dir.includes('север')) return 'fas fa-long-arrow-alt-up';
+            if (dir.includes('юг')) return 'fas fa-long-arrow-alt-down';
+            if (dir.includes('восток')) return 'fas fa-long-arrow-alt-right';
+            if (dir.includes('запад')) return 'fas fa-long-arrow-alt-left';
+            return 'fas fa-compass';
+        }
+        
+       // Функция загрузки данных
+        async function loadWeatherData() {
             try {
-                // Показываем загрузку
                 document.getElementById('loading').style.display = 'block';
                 document.getElementById('error').style.display = 'none';
                 document.getElementById('weatherContent').style.display = 'none';
                 
-                // Запрашиваем данные с API
-                const response = await fetch('/api/weather/current');
+                // Загружаем последние 7 записей
+                const response = await fetch('/api/weather/history?limit=7');
                 const result = await response.json();
                 
-                if (result.success && result.data) {
-                    const weather = result.data;
+                console.log('Данные API:', result); // Для отладки
+                
+                if (result.success && result.data && result.data.length > 0) {
+                    const weatherData = result.data;
                     
-                    // Обновляем основные данные
-                    document.getElementById('mainTemperature').textContent = weather.temperature + '°C';
-                    document.getElementById('feelsLike').textContent = 'Ощущается как: ' + weather.feels_like + '°C';
-                    document.getElementById('weatherDescription').textContent = weather.weather_description;
+                    // Обновляем таблицу
+                    updateWeatherTable(weatherData);
                     
-                    // Обновляем детали
-                    document.getElementById('tempMax').textContent = weather.temp_max + '°C';
-                    document.getElementById('tempMin').textContent = weather.temp_min + '°C';
-                    document.getElementById('pressure').textContent = weather.pressure_mmhg + ' мм рт.ст.';
-                    document.getElementById('humidity').textContent = weather.humidity + '%';
-                    document.getElementById('windSpeed').textContent = weather.wind_speed + ' м/с';
+                    // Обновляем статистику
+                    updateWeatherStats(weatherData);
                     
-                    // Обновляем дополнительные данные
-                    document.getElementById('windDeg').textContent = getWindDirection(weather.wind_deg) + ' (' + weather.wind_deg + '°)';
-                    document.getElementById('visibility').textContent = Math.round(weather.visibility / 1000) + ' км';
-                    document.getElementById('cloudiness').textContent = weather.cloudiness + '%';
-                    
-                    // Обновляем информацию о последнем обновлении
-                    document.getElementById('lastUpdateTime').textContent = formatTime(weather.timestamp);
-                    document.getElementById('weatherCity').textContent = weather.city;
-                    
-                    // Устанавливаем иконку погоды
-                    setWeatherIcon(weather.weather_icon);
+                    // Время обновления
+                    document.getElementById('lastUpdateTime').textContent = 
+                        new Date().toLocaleTimeString('ru-RU', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit'
+                        });
                     
                     // Показываем контент
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('weatherContent').style.display = 'block';
-                    document.getElementById('lastUpdateInfo').style.display = 'grid';
+                    
                 } else {
-                    showError(result.message || 'Не удалось получить погодные данные');
+                    showError(result.message || 'Нет данных для отображения');
                 }
                 
             } catch (error) {
-                console.error('Ошибка:', error);
-                showError('Ошибка соединения с сервером. Проверьте консоль для деталей.');
+                console.error('Ошибка загрузки данных:', error);
+                showError('Ошибка соединения с сервером');
             }
         }
-        
-        // Функция для определения направления ветра по градусам
-        function getWindDirection(degrees) {
-            const directions = ['С', 'СВ', 'В', 'ЮВ', 'Ю', 'ЮЗ', 'З', 'СЗ'];
-            const index = Math.round(degrees / 45) % 8;
-            return directions[index];
-        }
-        
-        // Функция для установки иконки погоды
-        function setWeatherIcon(iconCode) {
-            const iconMap = {
-                '01d': 'fas fa-sun',
-                '01n': 'fas fa-moon',
-                '02d': 'fas fa-cloud-sun',
-                '02n': 'fas fa-cloud-moon',
-                '03d': 'fas fa-cloud',
-                '03n': 'fas fa-cloud',
-                '04d': 'fas fa-cloud',
-                '04n': 'fas fa-cloud',
-                '09d': 'fas fa-cloud-rain',
-                '09n': 'fas fa-cloud-rain',
-                '10d': 'fas fa-cloud-sun-rain',
-                '10n': 'fas fa-cloud-moon-rain',
-                '11d': 'fas fa-bolt',
-                '11n': 'fas fa-bolt',
-                '13d': 'fas fa-snowflake',
-                '13n': 'fas fa-snowflake',
-                '50d': 'fas fa-smog',
-                '50n': 'fas fa-smog'
-            };
+
+        // Функция обновления таблицы (работает с полными данными)
+        function updateWeatherTable(data) {
+            const tbody = document.getElementById('weatherTableBody');
+            tbody.innerHTML = '';
             
-            const iconElement = document.getElementById('mainWeatherIcon');
-            const iconClass = iconMap[iconCode] || 'fas fa-cloud-sun';
-            iconElement.innerHTML = `<i class="${iconClass}"></i>`;
+            data.forEach(item => {
+                const temp = item.temperature || 0;
+                const feels = item.feels_like || temp;
+                const tempClass = temp >= 0 ? 'positive-temp' : 'negative-temp';
+                const feelsClass = feels >= 0 ? 'positive-temp' : 'negative-temp';
+                
+                const weatherIcon = getWeatherIcon(item.weather_description);
+                const windIcon = getWindIcon(item.wind_direction);
+                
+                // Форматируем дату/время
+                let displayTime = 'н/д';
+                if (item.timestamp) {
+                    try {
+                        const dt = new Date(item.timestamp);
+                        displayTime = dt.toLocaleString('ru-RU', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                    } catch (e) {
+                        displayTime = item.timestamp.substring(0, 16);
+                    }
+                }
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${displayTime}</td>
+                    <td class="temp-cell ${tempClass}">
+                        <i class="fas fa-thermometer-half"></i> ${temp}°C
+                    </td>
+                    <td class="${feelsClass}">
+                        ${feels}°C
+                    </td>
+                    <td>
+                        <i class="${weatherIcon}"></i> ${item.weather_description || 'н/д'}
+                    </td>
+                    <td>
+                        <i class="fas fa-tint"></i> ${item.humidity || 'н/д'}%
+                    </td>
+                    <td>
+                        <i class="fas fa-tachometer-alt"></i> ${item.pressure_mmhg || 'н/д'} мм рт.ст.
+                    </td>
+                    <td>
+                        <i class="${windIcon}"></i> ${item.wind_speed || 'н/д'} м/с ${item.wind_direction ? '(' + item.wind_direction + ')' : ''}
+                    </td>
+                    <td>
+                        <i class="fas fa-eye"></i> ${item.visibility ? (item.visibility / 1000).toFixed(1) + ' км' : 'н/д'}
+                    </td>
+                    <td>
+                        <i class="fas fa-city"></i> ${item.city || 'н/д'}
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Функция обновления статистики (работает с полными данными)
+        function updateWeatherStats(data) {
+            const statsContainer = document.getElementById('statsContainer');
+            
+            // Рассчитываем статистику
+            const temps = data.map(item => item.temperature).filter(t => t != null);
+            const avgTemp = temps.length > 0 ? (temps.reduce((a, b) => a + b) / temps.length).toFixed(1) : 'н/д';
+            const minTemp = temps.length > 0 ? Math.min(...temps).toFixed(1) : 'н/д';
+            const maxTemp = temps.length > 0 ? Math.max(...temps).toFixed(1) : 'н/д';
+            
+            const pressures = data.map(item => item.pressure_mmhg).filter(p => p != null);
+            const avgPressure = pressures.length > 0 ? (pressures.reduce((a, b) => a + b) / pressures.length).toFixed(1) : 'н/д';
+            
+            const humidities = data.map(item => item.humidity).filter(h => h != null);
+            const avgHumidity = humidities.length > 0 ? (humidities.reduce((a, b) => a + b) / humidities.length).toFixed(0) : 'н/д';
+            
+            const cities = [...new Set(data.map(item => item.city))];
+            
+            statsContainer.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-thermometer-half"></i></div>
+                    <div class="stat-label">Средняя температура</div>
+                    <div class="stat-value">${avgTemp}°C</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-temperature-high"></i></div>
+                    <div class="stat-label">Максимальная</div>
+                    <div class="stat-value">${maxTemp}°C</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-temperature-low"></i></div>
+                    <div class="stat-label">Минимальная</div>
+                    <div class="stat-value">${minTemp}°C</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-tachometer-alt"></i></div>
+                    <div class="stat-label">Среднее давление</div>
+                    <div class="stat-value">${avgPressure} мм</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-tint"></i></div>
+                    <div class="stat-label">Средняя влажность</div>
+                    <div class="stat-value">${avgHumidity}%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-map-marked-alt"></i></div>
+                    <div class="stat-label">Города</div>
+                    <div class="stat-value">${cities.length}</div>
+                </div>
+            `;
         }
         
-        // Функция для форматирования времени
-        function formatTime(timestamp) {
-            try {
-                const date = new Date(timestamp);
-                return date.toLocaleTimeString('ru-RU', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit'
-                });
-            } catch {
-                return 'только что';
-            }
+        // Функция обновления таблицы
+        function updateWeatherTable(data) {
+            const tbody = document.getElementById('weatherTableBody');
+            tbody.innerHTML = '';
+            
+            data.forEach(item => {
+                const tempClass = item.temperature >= 0 ? 'positive-temp' : 'negative-temp';
+                const feelsClass = item.feels_like >= 0 ? 'positive-temp' : 'negative-temp';
+                const weatherIcon = getWeatherIcon(item.weather_description);
+                const windIcon = getWindIcon(item.wind_direction);
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${formatDateTime(item.timestamp)}</td>
+                    <td class="temp-cell ${tempClass}">
+                        <i class="fas fa-thermometer-half"></i> ${item.temperature}°C
+                    </td>
+                    <td class="${feelsClass}">
+                        ${item.feels_like}°C
+                    </td>
+                    <td>
+                        <i class="${weatherIcon}"></i> ${item.weather_description}
+                    </td>
+                    <td>
+                        <i class="fas fa-tint"></i> ${item.humidity}%
+                    </td>
+                    <td>
+                        <i class="fas fa-tachometer-alt"></i> ${item.pressure_mmhg} мм рт.ст.
+                    </td>
+                    <td>
+                        <i class="${windIcon}"></i> ${item.wind_speed} м/с ${item.wind_direction ? '(' + item.wind_direction + ')' : ''}
+                    </td>
+                    <td>
+                        <i class="fas fa-eye"></i> ${item.visibility ? (item.visibility / 1000).toFixed(1) + ' км' : 'н/д'}
+                    </td>
+                    <td>
+                        <i class="fas fa-city"></i> ${item.city}
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        // Функция обновления статистики
+        function updateWeatherStats(data) {
+            const statsContainer = document.getElementById('statsContainer');
+            
+            // Рассчитываем статистику
+            const temps = data.map(item => item.temperature).filter(t => t != null);
+            const avgTemp = temps.length > 0 ? (temps.reduce((a, b) => a + b) / temps.length).toFixed(1) : 'н/д';
+            const minTemp = temps.length > 0 ? Math.min(...temps).toFixed(1) : 'н/д';
+            const maxTemp = temps.length > 0 ? Math.max(...temps).toFixed(1) : 'н/д';
+            
+            const pressures = data.map(item => item.pressure_mmhg).filter(p => p != null);
+            const avgPressure = pressures.length > 0 ? (pressures.reduce((a, b) => a + b) / pressures.length).toFixed(1) : 'н/д';
+            
+            const humidities = data.map(item => item.humidity).filter(h => h != null);
+            const avgHumidity = humidities.length > 0 ? (humidities.reduce((a, b) => a + b) / humidities.length).toFixed(0) : 'н/д';
+            
+            const cities = [...new Set(data.map(item => item.city))];
+            
+            statsContainer.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-thermometer-half"></i></div>
+                    <div class="stat-label">Средняя температура</div>
+                    <div class="stat-value">${avgTemp}°C</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-temperature-high"></i></div>
+                    <div class="stat-label">Максимальная</div>
+                    <div class="stat-value">${maxTemp}°C</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-temperature-low"></i></div>
+                    <div class="stat-label">Минимальная</div>
+                    <div class="stat-value">${minTemp}°C</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-tachometer-alt"></i></div>
+                    <div class="stat-label">Среднее давление</div>
+                    <div class="stat-value">${avgPressure} мм</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-tint"></i></div>
+                    <div class="stat-label">Средняя влажность</div>
+                    <div class="stat-value">${avgHumidity}%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-map-marked-alt"></i></div>
+                    <div class="stat-label">Города</div>
+                    <div class="stat-value">${cities.length}</div>
+                </div>
+            `;
         }
         
         // Функция для показа ошибки
@@ -649,21 +829,33 @@
             document.getElementById('error').textContent = message;
         }
         
-        // Функция обновления погоды
-        function refreshWeather() {
-            loadWeather();
+        // Функция переключения автообновления
+        function toggleAutoRefresh() {
+            autoRefreshEnabled = !autoRefreshEnabled;
+            const btn = document.getElementById('autoRefreshBtn');
+            
+            if (autoRefreshEnabled) {
+                btn.innerHTML = '<i class="fas fa-redo"></i> Автообновление: ВКЛ (60 сек)';
+                btn.classList.add('primary');
+                autoRefreshInterval = setInterval(loadWeatherData, 600000); // раз 10 минуту
+            } else {
+                btn.innerHTML = '<i class="fas fa-redo"></i> Автообновление: ВЫКЛ';
+                btn.classList.remove('primary');
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                    autoRefreshInterval = null;
+                }
+            }
         }
         
         // Загружаем данные при загрузке страницы
         document.addEventListener('DOMContentLoaded', function() {
-            loadWeather();
+            loadWeatherData();
             
-            // Автообновление каждые 5 минут
-            setInterval(loadWeather, 300000);
+            // Делаем функции доступными глобально
+            window.loadWeatherData = loadWeatherData;
+            window.toggleAutoRefresh = toggleAutoRefresh;
         });
-        
-        // Делаем функцию доступной глобально для кнопки
-        window.refreshWeather = refreshWeather;
     </script>
 </body>
 </html>

@@ -1,25 +1,18 @@
 import asyncio
 import json
-import os
 import sqlite3
 from datetime import datetime
 from playwright.async_api import async_playwright
 
-class LotteryParser:
+class CorrectLotteryParser:
     def __init__(self):
         self.lottery_url = "https://www.lotonews.ru/draws/archive/4x20"
-        
-        # Абсолютный путь к БД (самый надежный вариант)
         self.db_path = r'D:\VS_code\lotto-meteo-stats\data\lottery.db'
         print(f"🎯 БД парсера: {self.db_path}")
-        
-        # Создаем папку data если её нет
-        import os
-        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
     
     async def parse_and_save(self):
-        """Парсит и сохраняет в БД совместимую с Flask"""
-        print("🔄 Запуск парсера...")
+        """Правильный парсинг структурированной таблицы"""
+        print("🔄 Запуск КОРРЕКТНОГО парсера...")
         
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
@@ -29,30 +22,18 @@ class LotteryParser:
                 await page.goto(self.lottery_url, wait_until="networkidle", timeout=60000)
                 await asyncio.sleep(3)
                 
-                # Прокручиваем страницу чтобы загрузить все данные
-                print("🔍 Прокручиваем страницу для загрузки всех данных...")
+                # Прокручиваем чтобы загрузить все
                 await page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
                 await asyncio.sleep(2)
                 await page.evaluate('window.scrollTo(0, 0)')
                 await asyncio.sleep(1)
                 
-                # Сохраняем HTML для отладки
-                html_content = await page.content()
-                with open('debug_page.html', 'w', encoding='utf-8') as f:
-                    f.write(html_content)
-                print("📄 HTML сохранен как debug_page.html")
-                
-                # Выводим количество найденных строк для отладки
-                rows_count = await page.evaluate('''() => {
-                    return document.querySelectorAll('.content-main__circ-render-table-row').length;
-                }''')
-                print(f"🔍 Найдено строк в таблице: {rows_count}")
-                
-                data = await self._extract_data(page)
+                # ПАРСИМ ПРАВИЛЬНО - используем структуру таблицы
+                data = await self._extract_correct_data(page)
                 
                 if data:
                     print(f"✅ Найдено тиражей: {len(data)}")
-                    saved_count = self._save_to_flask_db(data)
+                    saved_count = self._save_to_db(data)
                     print(f"💾 Сохранено: {saved_count} записей")
                     return saved_count
                 return 0
@@ -65,208 +46,179 @@ class LotteryParser:
             finally:
                 await browser.close()
     
-    async def _extract_data(self, page):
-        """Извлекает данные - УЛУЧШЕННАЯ ВЕРСИЯ"""
+    async def _extract_correct_data(self, page):
+        """Исправленный метод - парсим таблицу правильно"""
         try:
             data = await page.evaluate('''() => {
-                // ВСЁ ЭТО - JAVASCRIPT КОД
                 const results = [];
-                const rows = document.querySelectorAll('.content-main__circ-render-table-row');
                 
-                console.log('Всего строк найдено:', rows.length);
+                // Ищем ВСЮ таблицу результатов
+                const table = document.querySelector('table');
+                if (!table) {
+                    console.log('Таблица не найдена, ищем div-таблицу');
+                    // Ищем div-таблицу
+                    const divTables = document.querySelectorAll('div[class*="table"], div[class*="archive"]');
+                    if (divTables.length > 0) {
+                        console.log('Найдена div-таблица');
+                    }
+                } else {
+                    console.log('Найдена HTML таблица');
+                }
                 
-                for (let i = 0; i < rows.length; i++) {
-                    const row = rows[i];
-                    console.log(`\\n--- Обработка строки ${i+1} ---`);
+                // ЛУЧШИЙ СПОСОБ: парсим по блокам тиражей
+                // Ищем все элементы, содержащие тиражи
+                const drawElements = document.querySelectorAll('[class*="draw"], [class*="tirazh"], tr, div[class*="row"]');
+                console.log('Найдено элементов тиражей:', drawElements.length);
+                
+                for (let i = 0; i < drawElements.length; i++) {
+                    const element = drawElements[i];
+                    const elementText = element.textContent.trim();
                     
-                    try {
-                        // 1. НОМЕР ТИРАЖА - ИЩЕМ РАЗНЫМИ СПОСОБАМИ
-                        let drawNumber = '';
-                        
-                        // Способ 1: Из ссылки
-                        const links = row.querySelectorAll('a');
-                        for (const link of links) {
-                            const href = link.getAttribute('href') || '';
-                            if (href.includes('/draws/archive/4x20/')) {
-                                const match = href.match(/\\/draws\\/archive\\/4x20\\/(\\d+)/);
-                                if (match) {
-                                    drawNumber = match[1];
-                                    break;
-                                }
-                            }
-                        }
-                        
-                        // Способ 2: Из текста с номером
-                        if (!drawNumber) {
-                            const numberElements = row.querySelectorAll('[class*="number"], [class*="num"], .draw-number');
-                            for (const elem of numberElements) {
-                                const text = elem.textContent.trim();
-                                const match = text.match(/№?\\s*(\\d+)/);
-                                if (match) {
-                                    drawNumber = match[1];
-                                    break;
-                                }
-                            }
-                        }
-                        
-                        // Способ 3: Из любого текста в строке
-                        if (!drawNumber) {
-                            const rowText = row.textContent;
-                            const match = rowText.match(/\\b(\\d{4,5})\\b/);
-                            if (match && match[1] > 1000) {
-                                drawNumber = match[1];
-                            }
-                        }
-                        
-                        console.log('Номер тиража:', drawNumber);
-                        
-                        // 2. ДАТА И ВРЕМЯ
-                        // 2. ДАТА И ВРЕМЯ
-                        let drawDate = '';
-                        let drawTime = '';
-
-                        // Получаем весь текст строки
-                        const rowText = row.textContent;
-
-                        // УЛУЧШЕННЫЕ ПАТТЕРНЫ для поиска
-                        const dateTimePattern = /(\\d{1,2}\\.\\d{1,2}\\.\\d{4})\\s+(\\d{1,2}:\\d{2})/;
-                        const datePattern = /(\\d{1,2}\\.\\d{1,2}\\.\\d{4})/;
-                        const timePattern = /(\\d{1,2}:\\d{2})/;
-
-                        // Пробуем найти дату и время вместе
-                        const dateTimeMatch = rowText.match(dateTimePattern);
-                        if (dateTimeMatch) {
-                            drawDate = dateTimeMatch[1];
-                            drawTime = dateTimeMatch[2];
-                        } else {
-                            // Ищем отдельно дату и время
-                            const dateMatch = rowText.match(datePattern);
-                            if (dateMatch) drawDate = dateMatch[1];
-                            
-                            const timeMatch = rowText.match(timePattern);
-                            if (timeMatch) drawTime = timeMatch[1];
-                        }
-                        
-                        console.log('Дата/время:', drawDate, drawTime);
-                        
-                        // 3. ЧИСЛА - ИЩЕМ ВСЕ ЧИСЛА В СТРОКЕ
-                        const allNumbers = [];
-                        
-                        // Способ 1: Из специальных контейнеров
-                        const numberContainers = row.querySelectorAll('.content-main__circ-render-table-row-cell-comb-container, .numbers, .balls');
-                        for (const container of numberContainers) {
-                            const text = container.textContent;
-                            const matches = text.match(/\\b\\d{1,2}\\b/g);
-                            if (matches) {
-                                matches.forEach(match => {
-                                    const num = parseInt(match, 10);
-                                    if (!isNaN(num)) allNumbers.push(num);
+                    // Проверяем что это тираж (есть номер тиража 5 цифр)
+                    const drawMatch = elementText.match(/\\b(\\d{5})\\b/);
+                    if (!drawMatch) continue;
+                    
+                    const drawNumber = drawMatch[1];
+                    
+                    // Ищем дату и время (формат: "2.1.2026 22:00")
+                    const dateTimeMatch = elementText.match(/(\\d{1,2}\\.\\d{1,2}\\.\\d{4})\\s+(\\d{1,2}:\\d{2})/);
+                    if (!dateTimeMatch) continue;
+                    
+                    const drawDate = dateTimeMatch[1];
+                    const drawTime = dateTimeMatch[2];
+                    
+                    console.log(`\\n🎰 Тираж ${drawNumber} от ${drawDate} ${drawTime}`);
+                    
+                    // ИЩЕМ ЧИСЛА ПРАВИЛЬНО - по структуре
+                    // Способ 1: Ищем блоки с числами в текущем элементе
+                    const numberBlocks = element.querySelectorAll('[class*="number"], [class*="ball"], [class*="comb"]');
+                    let numbers = [];
+                    
+                    if (numberBlocks.length > 0) {
+                        // Берем числа из специальных блоков
+                        numberBlocks.forEach(block => {
+                            const blockText = block.textContent.trim();
+                            const blockNumbers = blockText.match(/\\b\\d{1,2}\\b/g);
+                            if (blockNumbers) {
+                                blockNumbers.forEach(num => {
+                                    const n = parseInt(num, 10);
+                                    if (n >= 1 && n <= 20 && !numbers.includes(n)) {
+                                        numbers.push(n);
+                                    }
                                 });
                             }
-                        }
+                        });
+                    }
+                    
+                    // Способ 2: Если не нашли, парсим структурированно
+                    if (numbers.length < 8) {
+                        // Ищем вертикальные списки чисел (как на сайте)
+                        const allText = elementText;
                         
-                        // Способ 2: Ищем все span/div с числами
-                        const numberElements = row.querySelectorAll('span, div');
-                        for (const elem of numberElements) {
-                            const text = elem.textContent.trim();
-                            const num = parseInt(text, 10);
-                            if (!isNaN(num) && num >= 1 && num <= 20) {
-                                allNumbers.push(num);
+                        // Паттерн: 4 числа, потом |, потом 4 числа
+                        const pattern1 = /(\\d{1,2})\\s+(\\d{1,2})\\s+(\\d{1,2})\\s+(\\d{1,2})\\s*\\|\\s*(\\d{1,2})\\s+(\\d{1,2})\\s+(\\d{1,2})\\s+(\\d{1,2})/;
+                        const match1 = pattern1.exec(allText);
+                        
+                        if (match1) {
+                            numbers = [];
+                            for (let j = 1; j <= 8; j++) {
+                                numbers.push(parseInt(match1[j], 10));
+                            }
+                        } else {
+                            // Паттерн для чисел в столбик
+                            const lines = allText.split(/\\n|\\r/);
+                            const potentialNumbers = [];
+                            
+                            for (const line of lines) {
+                                const trimmed = line.trim();
+                                const num = parseInt(trimmed, 10);
+                                if (!isNaN(num) && num >= 1 && num <= 20) {
+                                    potentialNumbers.push(num);
+                                }
+                            }
+                            
+                            // Ищем последовательность из 8 чисел
+                            for (let j = 0; j <= potentialNumbers.length - 8; j++) {
+                                const slice = potentialNumbers.slice(j, j + 8);
+                                // Проверяем что это действительно выигрышные числа (могут быть повторы в 4x20)
+                                if (slice.every(n => n >= 1 && n <= 20)) {
+                                    numbers = slice;
+                                    break;
+                                }
                             }
                         }
+                    }
+                    
+                    // Разделяем на 2 поля по 4 числа
+                    if (numbers.length >= 8) {
+                        const field_1 = numbers.slice(0, 4);
+                        const field_2 = numbers.slice(4, 8);
                         
-                        // Способ 3: Ищем числа во всем тексте строки
-                        const allMatches = rowText.match(/\\b\\d{1,2}\\b/g);
-                        if (allMatches) {
-                            allMatches.forEach(match => {
-                                const num = parseInt(match, 10);
-                                if (!isNaN(num) && num >= 1 && num <= 20 && !allNumbers.includes(num)) {
-                                    allNumbers.push(num);
-                                }
-                            });
-                        }
+                        console.log('Поле 1:', field_1);
+                        console.log('Поле 2:', field_2);
                         
-                        // Убираем дубликаты и сортируем
-                        const uniqueNumbers = [...new Set(allNumbers)].sort((a, b) => a - b);
-                        
-                        console.log('Все найденные числа:', uniqueNumbers);
-                        
-                        // Разделяем на два поля (по 4 числа в каждом)
-                        if (uniqueNumbers.length >= 8) {
-                            const field_1 = uniqueNumbers.slice(0, 4);
-                            const field_2 = uniqueNumbers.slice(4, 8);
-                            
-                            console.log('Поле 1:', field_1);
-                            console.log('Поле 2:', field_2);
-                            
-                            results.push({
-                                draw_number: drawNumber,
-                                draw_date: drawDate,
-                                draw_time: drawTime || '15:00',
-                                numbers: uniqueNumbers,
-                                field_1: field_1,
-                                field_2: field_2
-                            });
-                        } else {
-                            console.log('Недостаточно чисел:', uniqueNumbers.length);
-                        }
-                        
-                    } catch (error) {
-                        console.error('Ошибка в обработке строки:', error);
+                        results.push({
+                            draw_number: drawNumber,
+                            draw_date: drawDate,
+                            draw_time: drawTime,
+                            numbers: numbers,
+                            field_1: field_1,
+                            field_2: field_2
+                        });
+                    } else {
+                        console.log('Недостаточно чисел:', numbers);
                     }
                 }
                 
-                console.log('Всего обработано записей:', results.length);
+                console.log('Всего найдено тиражей:', results.length);
                 return results;
             }''')
-        
-            # Обрабатываем данные
+            
+            # Обрабатываем полученные данные
             if data:
-                print(f"\n📊 Извлечено {len(data)} записей")
+                print(f"\n📊 Получено {len(data)} записей")
                 processed = []
                 seen = set()
-            
+                
                 for i, item in enumerate(data, 1):
                     draw_num = str(item['draw_number']).strip()
                     
                     if draw_num and draw_num not in seen:
                         seen.add(draw_num)
                         
-                        # Обрабатываем дату и время
-                        date_str = item['draw_date']
-                        time_str = item['draw_time'] if item['draw_time'] else '15:00'
+                        # Проверяем что числа корректные
+                        field_1 = item.get('field_1', [])
+                        field_2 = item.get('field_2', [])
                         
-                        # Проверяем числа
-                        if len(item.get('field_1', [])) == 4 and len(item.get('field_2', [])) == 4:
+                        if len(field_1) == 4 and len(field_2) == 4:
                             processed.append({
                                 'draw_number': draw_num,
-                                'date': date_str,
-                                'time': time_str,
-                                'numbers': json.dumps(item.get('numbers', [])),
-                                'field_1': json.dumps(item.get('field_1', [])),
-                                'field_2': json.dumps(item.get('field_2', [])),
+                                'date': item['draw_date'],
+                                'time': item['draw_time'],
+                                'field_1': json.dumps(field_1),
+                                'field_2': json.dumps(field_2),
                                 'created_at': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                             })
                             
-                            print(f"✅ [{i}] Тираж {draw_num}: {date_str} {time_str}")
-                            print(f"   Поле 1: {item.get('field_1', [])}")
-                            print(f"   Поле 2: {item.get('field_2', [])}")
+                            print(f"✅ [{i}] Тираж {draw_num}: {item['draw_date']} {item['draw_time']}")
+                            print(f"   Поле 1: {field_1}")
+                            print(f"   Поле 2: {field_2}")
                         else:
                             print(f"⚠️ [{i}] Тираж {draw_num}: некорректные числа")
-            
+                
                 print(f"\n🎯 Обработано {len(processed)} корректных записей")
                 return processed
-        
+            
             return None
-        
+            
         except Exception as e:
-            print(f"⚠️ Ошибка в _extract_data: {e}")
+            print(f"⚠️ Ошибка в _extract_correct_data: {e}")
             import traceback
             traceback.print_exc()
             return None
     
-    def _save_to_flask_db(self, data):
-        """Сохраняет в БД совместимую с Flask моделью"""
+    def _save_to_db(self, data):
+        """Сохраняет в БД"""
         if not data:
             print("⚠️ Нет данных для сохранения")
             return 0
@@ -293,16 +245,19 @@ class LotteryParser:
             )
             ''')
             
-            # Создаем индекс если его нет
-            cursor.execute('''
-            CREATE INDEX IF NOT EXISTS idx_draw_number ON lottery_results(draw_number)
-            ''')
-            
             print(f"💾 Сохраняем {len(data)} записей в БД...")
             
             # Вставляем данные
             for i, item in enumerate(data, 1):
                 try:
+                    # ПРОВЕРЯЕМ что сохраняем правильные числа
+                    field_1 = json.loads(item['field_1'])
+                    field_2 = json.loads(item['field_2'])
+                    
+                    if len(field_1) != 4 or len(field_2) != 4:
+                        print(f"⚠️ [{i}] Тираж {item['draw_number']}: пропускаем - некорректные данные")
+                        continue
+                    
                     cursor.execute('''
                     INSERT OR REPLACE INTO lottery_results 
                     (draw_number, date, time, field_1, field_2, created_at)
@@ -317,24 +272,36 @@ class LotteryParser:
                     ))
                     
                     saved_count += 1
-                    print(f"   [{i}] Сохранен тираж {item['draw_number']}")
+                    if i <= 10:  # Показываем только первые 10
+                        print(f"   [{i}] Сохранен тираж {item['draw_number']}")
                     
                 except Exception as e:
                     print(f"⚠️ Ошибка сохранения тиража {item['draw_number']}: {e}")
             
             conn.commit()
             
-            # Показываем статистику
+            # Статистика
             cursor.execute("SELECT COUNT(*) FROM lottery_results")
             total_count = cursor.fetchone()[0]
             
-            cursor.execute("SELECT MAX(created_at) FROM lottery_results")
-            last_update = cursor.fetchone()[0]
-            
-            print(f"\n📊 СТАТИСТИКА БАЗЫ ДАННЫХ:")
-            print(f"   • Добавлено новых: {saved_count}")
+            print(f"\n📊 СТАТИСТИКА БАЗЫ:")
+            print(f"   • Добавлено/обновлено: {saved_count}")
             print(f"   • Всего записей: {total_count}")
-            print(f"   • Последнее обновление: {last_update}")
+            
+            # Проверяем последние 3 записи
+            cursor.execute("""
+                SELECT draw_number, date, time, field_1, field_2 
+                FROM lottery_results 
+                ORDER BY draw_number DESC 
+                LIMIT 3
+            """)
+            
+            print(f"\n🔍 ПОСЛЕДНИЕ 3 ЗАПИСИ В БД:")
+            for row in cursor.fetchall():
+                draw_num, date, time, f1, f2 = row
+                print(f"Тираж {draw_num} от {date} {time}:")
+                print(f"   Поле 1: {json.loads(f1)}")
+                print(f"   Поле 2: {json.loads(f2)}")
             
             cursor.close()
             conn.close()
@@ -342,19 +309,19 @@ class LotteryParser:
             return saved_count
             
         except Exception as e:
-            print(f"❌ Ошибка при работе с БД: {e}")
+            print(f"❌ Ошибка БД: {e}")
             import traceback
             traceback.print_exc()
             return 0
 
 def run_parser_sync():
     """Синхронный запуск для Flask"""
-    parser = LotteryParser()
+    parser = CorrectLotteryParser()
     return asyncio.run(parser.parse_and_save())
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("🎰 ПАРСЕР ЛОТЕРЕИ 4x20 - ПОЛНАЯ ВЕРСИЯ")
+    print("🎰 КОРРЕКТНЫЙ ПАРСЕР ЛОТЕРЕИ 4x20")
     print("=" * 60)
-    result = asyncio.run(LotteryParser().parse_and_save())
+    result = asyncio.run(CorrectLotteryParser().parse_and_save())
     print(f"\n✨ Парсинг завершен. Сохранено записей: {result}")

@@ -14,7 +14,7 @@ import threading
 import schedule
 
 # Версия приложения
-app_version = '1.2.1'
+app_version = '1.2.2'
 # Создаем экземпляр Flask приложения
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -296,7 +296,7 @@ def get_statistics():
             status=500
         )
 
-@app.route('/api/lottery/predictions')
+@app.route('/api/lottery/predictions')# --------------------------нужно проверить рандом
 def get_predictions():
     """API для прогнозов"""
     import random
@@ -510,8 +510,10 @@ def get_weather_history():
     try:
         import sqlite3
         import os
-        import json
-        from datetime import datetime, timedelta
+        from datetime import datetime
+        
+        # Получаем параметры
+        limit = request.args.get('limit', default=7, type=int)
         
         db_path = r'D:\VS_code\lotto-meteo-stats\data\lottery.db'
         
@@ -519,6 +521,7 @@ def get_weather_history():
             return jsonify({'success': False, 'message': 'БД не найдена', 'data': []})
         
         conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row  # Это важно для dict(row)
         cursor = conn.cursor()
         
         # Проверяем есть ли таблица
@@ -527,48 +530,44 @@ def get_weather_history():
             conn.close()
             return jsonify({'success': False, 'message': 'Таблица погоды не найдена', 'data': []})
         
-        # Получаем данные за последние 7 дней
-        week_ago = (datetime.now() - timedelta(days=7)).isoformat()
-        
+        # Получаем данные с ВСЕМИ полями
         cursor.execute("""
-            SELECT timestamp, temperature, weather_description, 
-                   humidity, pressure_mmhg, wind_speed, city
+            SELECT 
+                id, timestamp, temperature, feels_like, 
+                weather_description, humidity, pressure_mmhg, pressure_hpa,
+                wind_speed, wind_direction, visibility, cloudiness, city, created_at
             FROM weather_history 
-            WHERE timestamp > ?
-            ORDER BY timestamp DESC
-        """, (week_ago,))
+            ORDER BY timestamp DESC 
+            LIMIT ?
+        """, (limit,))
         
+        # Преобразуем в список словарей
         data = []
         for row in cursor.fetchall():
-            timestamp, temp, desc, humidity, pressure, wind_speed, city = row
+            item = dict(row)
             
-            # Преобразуем timestamp
-            try:
-                dt = datetime.fromisoformat(timestamp)
-                date_str = dt.strftime('%Y-%m-%d')
-                time_str = dt.strftime('%H:%M')
-            except:
-                date_str = timestamp[:10]
-                time_str = timestamp[11:16]
+            # Конвертируем datetime в строку (если нужно)
+            if 'timestamp' in item and item['timestamp']:
+                if hasattr(item['timestamp'], 'isoformat'):
+                    item['timestamp'] = item['timestamp'].isoformat()
+                else:
+                    item['timestamp'] = str(item['timestamp'])
             
-            data.append({
-                'date': date_str,
-                'time': time_str,
-                'temperature': temp,
-                'weather': desc,
-                'humidity': humidity,
-                'pressure': pressure,
-                'wind_speed': wind_speed,
-                'city': city
-            })
+            if 'created_at' in item and item['created_at']:
+                if hasattr(item['created_at'], 'isoformat'):
+                    item['created_at'] = item['created_at'].isoformat()
+                else:
+                    item['created_at'] = str(item['created_at'])
+            
+            data.append(item)
         
         conn.close()
         
         return jsonify({
             'success': True,
             'data': data,
-            'total': len(data),
-            'last_update': datetime.now().isoformat()
+            'count': len(data),
+            'timestamp': datetime.now().isoformat()
         })
         
     except Exception as e:
@@ -576,26 +575,55 @@ def get_weather_history():
 
 @app.route('/api/weather/test')
 def test_weather_api():
-    """Тестовый endpoint для проверки API"""
+    """Тестовый endpoint для проверки данных"""
     try:
-        from src.parsers.weather_parser import WeatherParser
-        parser = WeatherParser()
-        weather = parser.get_current_weather()
-    except ImportError:
-        weather = None
+        import sqlite3
+        import os
+        
+        db_path = r'D:\VS_code\lotto-meteo-stats\data\lottery.db'
+        
+        if not os.path.exists(db_path):
+            return jsonify({'success': False, 'message': f'Файл БД не найден: {db_path}'})
+        
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        # 1. Проверяем таблицы
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
+        tables = cursor.fetchall()
+        
+        # 2. Проверяем структуру weather_history
+        cursor.execute("PRAGMA table_info(weather_history)")
+        columns = cursor.fetchall()
+        
+        # 3. Проверяем количество записей
+        cursor.execute("SELECT COUNT(*) FROM weather_history")
+        count = cursor.fetchone()[0]
+        
+        # 4. Берем пример записи
+        cursor.execute("SELECT * FROM weather_history ORDER BY timestamp DESC LIMIT 1")
+        example = cursor.fetchone()
+        column_names = [description[0] for description in cursor.description]
+        
+        conn.close()
     
-    if weather:
-        return f"""
-        <h2>Погода в {weather['city']}:</h2>
-        <p>🌡️ Температура: {weather['temperature']}°C</p>
-        <p>🤔 Ощущается как: {weather['feels_like']}°C</p>
-        <p>☁️ Погода: {weather['weather_description']}</p>
-        <p>💧 Влажность: {weather['humidity']}%</p>
-        <p>📊 Давление: {weather['pressure_mmhg']} мм рт.ст. ({weather['pressure_hpa']} hPa)</p>
-        <p>💨 Ветер: {weather['wind_speed']} м/с</p>
-        """
-    else:
-        return "<h2>Не удалось получить погодные данные. Проверь API ключ.</h2>"
+        return jsonify({
+            'success': True,
+            'db_exists': True,
+            'tables': [t[0] for t in tables],
+            'weather_columns': [{'id': c[0], 'name': c[1], 'type': c[2]} for c in columns],
+            'total_records': count,
+            'example_record': dict(zip(column_names, example)) if example else None,
+            'message': 'База данных подключена успешно'
+        })
+        
+    except Exception as e:
+        import traceback
+        return jsonify({
+            'success': False,
+            'message': str(e),
+            'traceback': traceback.format_exc()
+        })
 
 # Функции для парсинга
 @app.route('/api/run-parser', methods=['POST'])

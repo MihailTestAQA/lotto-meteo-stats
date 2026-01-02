@@ -5,7 +5,7 @@
 import schedule
 import time
 from datetime import datetime
-from src.parsers.lottery_parser_selenium import run_parser_sync
+from src.parsers.lottery_parser import run_parser_sync
 from src.parsers.weather_parser import WeatherParser
 
 def job_lottery():
@@ -64,6 +64,20 @@ def job_weather():
         print(f"💥 Ошибка сбора погоды: {e}")
         return False
 
+def job_lottery_with_weather():
+    """Сбор и лотереи и погоды одновременно"""
+    print(f"\n{'='*60}")
+    print(f"🎰🌤️ Сбор лотереи и погоды: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"{'='*60}")
+    
+    # Сначала погода
+    weather_success = job_weather()
+    
+    # Потом лотерея
+    lottery_success = job_lottery()
+    
+    return weather_success and lottery_success
+
 def run_scheduler():
     """Запускает планировщик задач"""
     print("=" * 60)
@@ -71,26 +85,39 @@ def run_scheduler():
     print("=" * 60)
     print("📅 Расписание:")
     print("  • Лотерея+Погода: 10:00, 12:07, 13:52, 16:07, 16:22, 18:00, 20:07, 22:00")
-    print("  • Только погода: каждый час с 8:00 до 23:00")
+    print("  • Только погода: каждые 30 минут с 8:00 до 23:00")
     print("🛑 Для остановки нажмите Ctrl+C\n")
     
-    # Основные времена лотереи (с привязкой погоды)
-    lottery_times = ["10:00", "12:07", "13:52", "16:07", "16:22", "18:00", "20:07", "22:00"]
+    # Исправленные времена лотереи (без минутного смещения)
+    lottery_times = ["10:00", "12:00", "13:00", "16:00", "16:22", "18:00", "20:00", "22:00"]
+    
+    # Основные задачи: лотерея + погода
     for t in lottery_times:
         schedule.every().day.at(t).do(job_lottery_with_weather)
+        print(f"  ⏰ Настроено: лотерея+погода в {t}")
     
-    # Погода каждый час (когда нет лотереи)
+    # Только погода каждые 30 минут
+    # Создаем список всех времен для избежания дублирования
+    all_scheduled_times = set(lottery_times)
+    
     for hour in range(8, 24):  # с 8:00 до 23:00
         for minute in [0, 30]:  # каждый час и каждые полчаса
             time_str = f"{hour:02d}:{minute:02d}"
-            if time_str not in lottery_times:  # не дублируем
+            if time_str not in all_scheduled_times:
                 schedule.every().day.at(time_str).do(job_weather)
+                all_scheduled_times.add(time_str)
+                print(f"  🌤️ Настроено: только погода в {time_str}")
     
+    print(f"\n✅ Всего задач: {len(schedule.jobs)}")
     print("▶️ Планировщик настроен. Ожидание задач...\n")
+    
+    # ПЕРВЫЙ ЗАПУСК ПРЯМО СЕЙЧАС
+    print("🔧 Первый запуск погоды...")
+    job_weather()
     
     while True:
         schedule.run_pending()
-        time.sleep(60)
+        time.sleep(60)  # Проверяем каждую минуту
 
 if __name__ == "__main__":
     try:
@@ -99,3 +126,5 @@ if __name__ == "__main__":
         print("\n\n👋 Планировщик остановлен пользователем")
     except Exception as e:
         print(f"\n💥 Критическая ошибка: {e}")
+        import traceback
+        traceback.print_exc()
