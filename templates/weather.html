@@ -3,37 +3,157 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Погодные данные - LottoMeteoStats</title>
+    <title>{% block title %}Погодные данные - LottoMeteoStats{% endblock %}</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
+        /* СТИЛИ ИЗ BASE.HTML */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         body {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: #333;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             min-height: 100vh;
+            color: #333;
         }
         
-        .container {
-            max-width: 1200px;
+        .page-container {
+            max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
         }
         
-        header {
+        /* ХЕДЕР */
+        .main-header {
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+            border-radius: 20px;
+            padding: 25px 30px;
+            color: white;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(155, 89, 182, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .main-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 30px 30px;
+            opacity: 0.3;
+            transform: rotate(30deg);
+        }
+        
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .logo-section i {
+            font-size: 2.5rem;
+            opacity: 0.9;
+        }
+        
+        .logo-section h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+        }
+        
+        /* НАВИГАЦИЯ */
+        .nav-section {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .nav-btn {
+            padding: 12px 25px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-weight: 500;
+        }
+        
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .nav-btn.active {
+            background: rgba(255, 255, 255, 0.3);
+            font-weight: 600;
+        }
+        
+        /* ОСНОВНОЙ КОНТЕНТ */
+        .main-content {
+            min-height: 60vh;
+        }
+        
+        /* ФУТЕР */
+        .main-footer {
+            text-align: center;
+            padding: 25px;
+            background: linear-gradient(135deg, #718096 0%, #4a5568 100%);
+            color: white;
+            border-radius: 15px;
+            margin-top: 40px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .main-footer p {
+            margin: 5px 0;
+            opacity: 0.9;
+        }
+        
+        .main-footer .version {
+            font-size: 0.9rem;
+            opacity: 0.7;
+            margin-top: 10px;
+        }
+        
+        /* СООБЩЕНИЯ */
+        .messages-container {
+            margin-bottom: 30px;
+        }
+        
+        .message {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* СТИЛИ ДЛЯ СТРАНИЦЫ ПОГОДЫ */
+        .weather-header {
             background: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
-            padding: 30px;
+            padding: 25px;
             margin-bottom: 30px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
         }
         
-        .header-top {
+        .weather-header-top {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -42,7 +162,7 @@
             gap: 15px;
         }
         
-        h1 {
+        .weather-title {
             color: #4a5568;
             font-size: 2.5rem;
             display: flex;
@@ -50,7 +170,7 @@
             gap: 15px;
         }
         
-        .controls {
+        .weather-controls {
             display: flex;
             gap: 15px;
             flex-wrap: wrap;
@@ -179,17 +299,36 @@
             text-align: center;
         }
         
+        /* АДАПТИВНОСТЬ */
         @media (max-width: 768px) {
-            .container {
-                padding: 10px;
+            .page-container {
+                padding: 15px;
             }
             
-            .header-top {
+            .main-header {
+                padding: 20px;
+            }
+            
+            .logo-section h1 {
+                font-size: 1.8rem;
+            }
+            
+            .nav-section {
+                justify-content: center;
+            }
+            
+            .nav-btn {
+                flex: 1;
+                justify-content: center;
+                min-width: 140px;
+            }
+            
+            .weather-header-top {
                 flex-direction: column;
                 text-align: center;
             }
             
-            .controls {
+            .weather-controls {
                 justify-content: center;
             }
             
@@ -201,125 +340,205 @@
                 font-size: 2.5rem;
             }
         }
+        
+        @media (max-width: 480px) {
+            .logo-section {
+                flex-direction: column;
+                text-align: center;
+                gap: 10px;
+            }
+            
+            .nav-btn {
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+            
+            .main-footer {
+                padding: 20px 15px;
+            }
+            
+            .weather-title {
+                font-size: 2rem;
+            }
+            
+            .control-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="header-top">
-                <h1><i class="fas fa-cloud-sun"></i> Погодные данные</h1>
-                <div class="controls">
-                    <a href="/" class="control-btn">
-                        <i class="fas fa-home"></i> На главную
-                    </a>
-                    <button onclick="refreshWeather()" class="control-btn primary">
-                        <i class="fas fa-sync-alt"></i> Обновить
-                    </button>
-                    <a href="/api/weather/current" target="_blank" class="control-btn">
-                        <i class="fas fa-code"></i> API
-                    </a>
-                    <a href="/api/weather/test" target="_blank" class="control-btn">
-                        <i class="fas fa-vial"></i> Тест
-                    </a>
+    <div class="page-container">
+        <!-- ХЕДЕР (ЕДИНЫЙ ДЛЯ ВСЕХ СТРАНИЦ) -->
+        <header class="main-header">
+            <div class="logo-section">
+                <i class="fas fa-chart-line"></i>
+                <h1>LottoMeteoStats</h1>
+            </div>
+            
+            <!-- НАВИГАЦИЯ -->
+            <nav class="nav-section">
+                <a href="{{ url_for('index') }}" class="nav-btn {% if request.endpoint == 'index' %}active{% endif %}">
+                    <i class="fas fa-home"></i> Главная
+                </a>
+                <a href="{{ url_for('weather_page') }}" class="nav-btn {% if request.endpoint == 'weather_page' %}active{% endif %}">
+                    <i class="fas fa-cloud-sun"></i> Погода
+                </a>
+                <a href="{{ url_for('lottery_page') }}" class="nav-btn {% if request.endpoint == 'lottery_page' %}active{% endif %}">
+                    <i class="fas fa-ticket-alt"></i> Лотерея
+                </a>
+                <a href="{{ url_for('statistics_page') }}" class="nav-btn {% if request.endpoint == 'statistics_page' %}active{% endif %}">
+                    <i class="fas fa-chart-bar"></i> Статистика
+                </a>
+                <a href="{{ url_for('graphs_page') }}" class="nav-btn {% if request.endpoint == 'graphs_page' %}active{% endif %}">
+                    <i class="fas fa-chart-line"></i> Графики
+                </a>
+                <a href="{{ url_for('predictions_page') }}" class="nav-btn {% if request.endpoint == 'predictions_page' %}active{% endif %}">
+                    <i class="fas fa-crystal-ball"></i> Felix Pila
+                </a>
+                <a href="{{ url_for('admin_panel') }}" class="nav-btn {% if request.endpoint == 'admin_panel' %}active{% endif %}">
+                    <i class="fas fa-cog"></i> Админ
+                </a>
+            </nav>
+        </header>
+
+        <!-- СООБЩЕНИЯ -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="messages-container">
+                    {% for category, message in messages %}
+                        <div class="message {{ category if category else 'info' }}">
+                            <i class="fas fa-{% if category == 'error' %}exclamation-circle{% elif category == 'success' %}check-circle{% elif category == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %}"></i>
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- ОСНОВНОЙ КОНТЕНТ -->
+        <main class="main-content">
+            <!-- Заголовок погодной страницы -->
+            <div class="weather-header">
+                <div class="weather-header-top">
+                    <h1 class="weather-title"><i class="fas fa-cloud-sun"></i> Погодные данные</h1>
+                    <div class="weather-controls">
+                        <button onclick="refreshWeather()" class="control-btn primary">
+                            <i class="fas fa-sync-alt"></i> Обновить
+                        </button>
+                        <a href="/api/weather/current" target="_blank" class="control-btn">
+                            <i class="fas fa-code"></i> API
+                        </a>
+                        <a href="/api/weather/test" target="_blank" class="control-btn">
+                            <i class="fas fa-vial"></i> Тест
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="weather-details" id="lastUpdateInfo" style="display: none;">
+                    <div class="detail-item">
+                        <div class="detail-icon"><i class="fas fa-clock"></i></div>
+                        <div class="detail-label">Последнее обновление</div>
+                        <div class="detail-value" id="lastUpdateTime">-</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-icon"><i class="fas fa-map-marker-alt"></i></div>
+                        <div class="detail-label">Город</div>
+                        <div class="detail-value" id="weatherCity">-</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-icon"><i class="fas fa-database"></i></div>
+                        <div class="detail-label">Источник</div>
+                        <div class="detail-value">OpenWeatherMap</div>
+                    </div>
                 </div>
             </div>
             
-            <div class="weather-details" id="lastUpdateInfo" style="display: none;">
-                <div class="detail-item">
-                    <div class="detail-icon"><i class="fas fa-clock"></i></div>
-                    <div class="detail-label">Последнее обновление</div>
-                    <div class="detail-value" id="lastUpdateTime">-</div>
-                </div>
-                <div class="detail-item">
-                    <div class="detail-icon"><i class="fas fa-map-marker-alt"></i></div>
-                    <div class="detail-label">Город</div>
-                    <div class="detail-value" id="weatherCity">-</div>
-                </div>
-                <div class="detail-item">
-                    <div class="detail-icon"><i class="fas fa-database"></i></div>
-                    <div class="detail-label">Источник</div>
-                    <div class="detail-value">OpenWeatherMap</div>
-                </div>
+            <div id="loading" class="loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <h2>Загрузка погодных данных...</h2>
+                <p>Пожалуйста, подождите</p>
             </div>
-        </header>
-        
-        <div id="loading" class="loading">
-            <i class="fas fa-spinner fa-spin"></i>
-            <h2>Загрузка погодных данных...</h2>
-            <p>Пожалуйста, подождите</p>
-        </div>
-        
-        <div id="error" class="error" style="display: none;"></div>
-        
-        <div id="weatherContent" style="display: none;">
-            <div class="weather-grid">
-                <div class="weather-card main">
-                    <div class="weather-icon" id="mainWeatherIcon">
-                        <i class="fas fa-cloud-sun"></i>
+            
+            <div id="error" class="error" style="display: none;"></div>
+            
+            <div id="weatherContent" style="display: none;">
+                <div class="weather-grid">
+                    <div class="weather-card main">
+                        <div class="weather-icon" id="mainWeatherIcon">
+                            <i class="fas fa-cloud-sun"></i>
+                        </div>
+                        <div class="temperature" id="mainTemperature">-</div>
+                        <div class="feels-like" id="feelsLike">Ощущается как: -</div>
+                        <div class="weather-description" id="weatherDescription">-</div>
+                        
+                        <div class="weather-details">
+                            <div class="detail-item">
+                                <div class="detail-icon"><i class="fas fa-temperature-high"></i></div>
+                                <div class="detail-label">Максимум</div>
+                                <div class="detail-value" id="tempMax">-</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-icon"><i class="fas fa-temperature-low"></i></div>
+                                <div class="detail-label">Минимум</div>
+                                <div class="detail-value" id="tempMin">-</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-icon"><i class="fas fa-tachometer-alt"></i></div>
+                                <div class="detail-label">Давление</div>
+                                <div class="detail-value" id="pressure">-</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-icon"><i class="fas fa-tint"></i></div>
+                                <div class="detail-label">Влажность</div>
+                                <div class="detail-value" id="humidity">-</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="temperature" id="mainTemperature">-</div>
-                    <div class="feels-like" id="feelsLike">Ощущается как: -</div>
-                    <div class="weather-description" id="weatherDescription">-</div>
                     
-                    <div class="weather-details">
-                        <div class="detail-item">
-                            <div class="detail-icon"><i class="fas fa-temperature-high"></i></div>
-                            <div class="detail-label">Максимум</div>
-                            <div class="detail-value" id="tempMax">-</div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-icon"><i class="fas fa-temperature-low"></i></div>
-                            <div class="detail-label">Минимум</div>
-                            <div class="detail-value" id="tempMin">-</div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-icon"><i class="fas fa-tachometer-alt"></i></div>
-                            <div class="detail-label">Давление</div>
-                            <div class="detail-value" id="pressure">-</div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-icon"><i class="fas fa-tint"></i></div>
-                            <div class="detail-label">Влажность</div>
-                            <div class="detail-value" id="humidity">-</div>
+                    <div class="weather-card">
+                        <h3><i class="fas fa-wind"></i> Ветер</h3>
+                        <div class="weather-details">
+                            <div class="detail-item">
+                                <div class="detail-icon"><i class="fas fa-tachometer-alt"></i></div>
+                                <div class="detail-label">Скорость</div>
+                                <div class="detail-value" id="windSpeed">-</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-icon"><i class="fas fa-compass"></i></div>
+                                <div class="detail-label">Направление</div>
+                                <div class="detail-value" id="windDeg">-</div>
+                            </div>
                         </div>
                     </div>
-                </div>
-                
-                <div class="weather-card">
-                    <h3><i class="fas fa-wind"></i> Ветер</h3>
-                    <div class="weather-details">
-                        <div class="detail-item">
-                            <div class="detail-icon"><i class="fas fa-tachometer-alt"></i></div>
-                            <div class="detail-label">Скорость</div>
-                            <div class="detail-value" id="windSpeed">-</div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-icon"><i class="fas fa-compass"></i></div>
-                            <div class="detail-label">Направление</div>
-                            <div class="detail-value" id="windDeg">-</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="weather-card">
-                    <h3><i class="fas fa-eye"></i> Видимость</h3>
-                    <div class="weather-details">
-                        <div class="detail-item">
-                            <div class="detail-icon"><i class="fas fa-road"></i></div>
-                            <div class="detail-label">Видимость</div>
-                            <div class="detail-value" id="visibility">-</div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-icon"><i class="fas fa-cloud"></i></div>
-                            <div class="detail-label">Облачность</div>
-                            <div class="detail-value" id="cloudiness">-</div>
+                    
+                    <div class="weather-card">
+                        <h3><i class="fas fa-eye"></i> Видимость</h3>
+                        <div class="weather-details">
+                            <div class="detail-item">
+                                <div class="detail-icon"><i class="fas fa-road"></i></div>
+                                <div class="detail-label">Видимость</div>
+                                <div class="detail-value" id="visibility">-</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-icon"><i class="fas fa-cloud"></i></div>
+                                <div class="detail-label">Облачность</div>
+                                <div class="detail-value" id="cloudiness">-</div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </main>
+
+        <!-- ФУТЕР (ЕДИНЫЙ ДЛЯ ВСЕХ СТРАНИЦ) -->
+        <footer class="main-footer">
+            <p>&copy; 2025 LottoMeteoStats. Проект для анализа лотерейных данных</p>
+            <p class="version">Версия: {{ version if version else '1.2.1' }} | Погодные данные</p>
+        </footer>
     </div>
-    
+
     <script>
         // Функция загрузки погодных данных
         async function loadWeather() {

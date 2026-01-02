@@ -69,6 +69,7 @@ class LotteryParser:
         """Извлекает данные - УЛУЧШЕННАЯ ВЕРСИЯ"""
         try:
             data = await page.evaluate('''() => {
+                // ВСЁ ЭТО - JAVASCRIPT КОД
                 const results = [];
                 const rows = document.querySelectorAll('.content-main__circ-render-table-row');
                 
@@ -120,17 +121,18 @@ class LotteryParser:
                         console.log('Номер тиража:', drawNumber);
                         
                         // 2. ДАТА И ВРЕМЯ
+                        // 2. ДАТА И ВРЕМЯ
                         let drawDate = '';
                         let drawTime = '';
-                        
+
                         // Получаем весь текст строки
                         const rowText = row.textContent;
-                        
-                        // Паттерны для поиска
-                        const dateTimePattern = /(\\d{2}\\.\\d{2}\\.\\d{4})\\s+(\\d{2}:\\d{2})/;
-                        const datePattern = /(\\d{2}\\.\\d{2}\\.\\d{4})/;
-                        const timePattern = /(\\d{2}:\\d{2})/;
-                        
+
+                        // УЛУЧШЕННЫЕ ПАТТЕРНЫ для поиска
+                        const dateTimePattern = /(\\d{1,2}\\.\\d{1,2}\\.\\d{4})\\s+(\\d{1,2}:\\d{2})/;
+                        const datePattern = /(\\d{1,2}\\.\\d{1,2}\\.\\d{4})/;
+                        const timePattern = /(\\d{1,2}:\\d{2})/;
+
                         // Пробуем найти дату и время вместе
                         const dateTimeMatch = rowText.match(dateTimePattern);
                         if (dateTimeMatch) {
