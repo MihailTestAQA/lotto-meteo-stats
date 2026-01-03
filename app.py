@@ -13,18 +13,21 @@ import os
 import threading
 import schedule
 
-# Версия приложения
+# место управления версиями
 app_version = '1.2.2'
+
 # Создаем экземпляр Flask приложения
 app = Flask(__name__)
 app.config.from_object(Config)
+
+app.config['APP_VERSION'] = app_version 
 
 # Инициализируем базу данных
 db = SQLAlchemy(app)
 
 # Модель данных для лотереи
 class LotteryResult(db.Model):
-    """Модель для хранения результатов лотереи"""
+    
     __tablename__ = 'lottery_results'
     
     id = db.Column(db.Integer, primary_key=True)
@@ -41,7 +44,7 @@ class LotteryResult(db.Model):
 # Маршруты приложения
 @app.route('/')
 def index():
-    """Главная страница"""
+    # Главная страница
     try:
         # Подключаемся напрямую к БД lottery.db в папке data
         import sqlite3
@@ -74,8 +77,8 @@ def index():
     stats = {
         'project_name': 'LottoMeteoStats',
         'current_date': datetime.now().strftime("%d.%m.%Y %H:%M"),
-        'version': '1.0.3',
-        'total_records': total_records, #----------
+        'version': app_version,
+        'total_records': total_records,
         'features': [
             'Анализ лотерейных данных',
             'Интеграция с погодными API',
@@ -87,46 +90,46 @@ def index():
 
 @app.route('/lottery')
 def lottery_page():
-    """Страница с лотерейными данными"""
-    return render_template('lottery.html')
+    # Страница с лотерейными данными
+    return render_template('lottery.html', version=app_version)
 
 @app.route('/weather')
 def weather_page():
-    """Страница с погодными данными"""
-    return render_template('weather.html')
+     # Страница с погодными данными
+    return render_template('weather.html', version=app_version)
 
 @app.route('/admin')
 def admin_panel():
-    """Панель администратора"""
-    return render_template('admin.html')
+    # Панель администратора
+    return render_template('admin.html', version=app_version)
 
 # Добавь после других роутов
 
 @app.route('/statistics')
 def statistics_page():
-    """Страница статистики"""
-    return render_template('statistics.html')
+     # Страница статистики
+    return render_template('statistics.html', version=app_version)
 
 @app.route('/predictions')
 def predictions_page():
-    """Страница Felix Pila с предсказаниями"""
+     # Страница Felix Pila с предсказаниями
     current_date = datetime.now().strftime("%d.%m.%Y")
     return render_template('felix_pila.html', 
                           current_date=current_date,
                           version=app_version)
 @app.route('/graphs')
 def graphs_page():
-    """Страница графиков"""
+    # Страница графиков
     return render_template('graphs.html')
 
 @app.route('/api/lottery/statistics')
 def get_statistics():
-    """API для получения реальной статистики из БД"""
+    #API для получения реальной статистики из БД
     try:
         import sqlite3
         import os
         import json
-        from flask import Response  # ← ДОБАВЬ ИМПОРТ
+        from flask import Response
         from collections import Counter
         
         # Используем тот же путь что и в get_lottery_data()
@@ -176,7 +179,6 @@ def get_statistics():
                     
         elif 'numbers' in columns:
             print("⚠️ Используем старую структуру (numbers)")
-            # Старый код для обратной совместимости
             cursor.execute("SELECT numbers FROM lottery_results WHERE numbers IS NOT NULL")
             for (nums_json,) in cursor.fetchall():
                 if nums_json:
@@ -273,10 +275,10 @@ def get_statistics():
             'last_update': datetime.now().isoformat()
         }
         
-        # ВАЖНО: Используем Response с ensure_ascii=False
+        # Используем Response с ensure_ascii=False
         return Response(
-            json.dumps(response_data, ensure_ascii=False),  # ← ОТКЛЮЧАЕМ ASCII КОНВЕРТАЦИЮ
-            mimetype='application/json; charset=utf-8'      # ← УКАЗЫВАЕМ КОДИРОВКУ
+            json.dumps(response_data, ensure_ascii=False),  # отключаем ASCII конвертацию
+            mimetype='application/json; charset=utf-8'      # указываем кодировку
         )
         
     except Exception as e:
@@ -284,7 +286,7 @@ def get_statistics():
         import traceback
         traceback.print_exc()
         
-        # Для ошибок тоже используем правильную кодировку
+        # Для ошибок используем кодировку
         error_response = {
             'success': False,
             'message': f'Ошибка: {str(e)}'
@@ -296,9 +298,8 @@ def get_statistics():
             status=500
         )
 
-@app.route('/api/lottery/predictions')# --------------------------нужно проверить рандом
+@app.route('/api/lottery/predictions') # API для прогнозов
 def get_predictions():
-    """API для прогнозов"""
     import random
     
     # Простой прогноз: случайные числа
@@ -318,7 +319,7 @@ def get_predictions():
 # API endpoints
 @app.route('/api/health')
 def health_check():
-    """Проверка работоспособности"""
+    # Проверка работоспособности
     try:
         import sqlite3
         import os
@@ -327,7 +328,7 @@ def health_check():
         basedir = os.path.abspath(os.path.dirname(__file__))
         db_path = os.path.join(basedir, 'data', 'lottery.db')
         
-        print(f"🔍 health_check ищет БД: {db_path}")  # Отладка
+        print(f"🔍 health_check ищет БД: {db_path}")
         
         if not os.path.exists(db_path):
             return jsonify({
@@ -368,7 +369,7 @@ def health_check():
                 'timestamp': datetime.now().isoformat(),
                 'message': 'Сайт работает',
                 'database': f'connected ({record_count} записей)',
-                'records': record_count,  # ← ВАЖНО: должно быть число > 0
+                'records': record_count,
                 'db_file': db_path
             })
             
@@ -393,7 +394,7 @@ def health_check():
 
 @app.route('/api/lottery/data')
 def get_lottery_data():
-    """API для получения всех лотерейных данных"""
+    #API для получения всех лотерейных данных
     try:
         import sqlite3
         import os
@@ -409,7 +410,6 @@ def get_lottery_data():
         
         print(f"📊 Получаем ВСЕ данные из БД: {db_path}")
         
-        # ЗДЕСЬ ИЗМЕНЕНИЕ: УБИРАЕМ LIMIT ИЛИ СТАВИМ БОЛЬШОЙ
         cursor.execute("""
             SELECT draw_number, date, time, field_1, field_2, 
                    temperature, weather, pressure, created_at 
@@ -421,7 +421,7 @@ def get_lottery_data():
                 END DESC,
                 time DESC,
                 draw_number DESC
-            -- LIMIT 1000  ← раскомментируй если хочешь ограничение
+             --  LIMIT 1000  <- раскомментируй если хочешь ограничение
         """)
         
         data = []
@@ -445,7 +445,7 @@ def get_lottery_data():
             data.append({
                 'tirage': draw_number,
                 'date': date if date else '',
-                'time': time if time else '15:00',
+                'time': time if time else '',
                 'field_1': field1_list,
                 'field_2': field2_list,
                 'created_at': created_at,
@@ -729,6 +729,11 @@ def get_felix_pila_predict():
             "confidence": 0.65,
             "note": "Используются демо-данные"
         })
+
+# Контекстный процессор для автоматической передачи версии во все шаблоны
+@app.context_processor
+def inject_version():
+    return dict(version=app_version)
 
 def get_lottery_data():
     """Получение данных лотереи"""# ---------------------------------------------------------

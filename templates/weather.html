@@ -533,18 +533,23 @@
         
         // Функция для форматирования даты и времени
         function formatDateTime(timestamp) {
-            const date = new Date(timestamp);
-            return date.toLocaleString('ru-RU', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
+            try {
+                const date = new Date(timestamp);
+                return date.toLocaleString('ru-RU', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch (e) {
+                return timestamp || 'н/д';
+            }
         }
         
         // Функция для определения иконки погоды по описанию
         function getWeatherIcon(description) {
+            if (!description) return 'fas fa-cloud-sun';
             const desc = description.toLowerCase();
             if (desc.includes('ясно') || desc.includes('солнечно')) return 'fas fa-sun';
             if (desc.includes('облачно')) return 'fas fa-cloud';
@@ -568,7 +573,27 @@
             return 'fas fa-compass';
         }
         
-       // Функция загрузки данных
+        // Функция для форматирования видимости (из км в метры)
+        function formatVisibility(visibility) {
+            if (visibility === null || visibility === undefined || visibility === '') {
+                return 'н/д';
+            }
+            
+            // Проверяем, является ли visibility числом
+            const visNum = parseFloat(visibility);
+            if (isNaN(visNum)) {
+                // Если это не число, возвращаем как есть
+                return visibility;
+            }
+            
+            // Умножаем на 1000, так как API присылает в километрах
+            const visInMeters = visNum * 1000;
+            
+            // Округляем до целого числа и показываем в метрах
+            return Math.round(visInMeters) + ' м';
+        }
+        
+        // Функция загрузки данных
         async function loadWeatherData() {
             try {
                 document.getElementById('loading').style.display = 'block';
@@ -612,14 +637,15 @@
             }
         }
 
-        // Функция обновления таблицы (работает с полными данными)
+        // Функция обновления таблицы
         function updateWeatherTable(data) {
             const tbody = document.getElementById('weatherTableBody');
             tbody.innerHTML = '';
             
             data.forEach(item => {
-                const temp = item.temperature || 0;
-                const feels = item.feels_like || temp;
+                // Безопасное получение значений
+                const temp = parseFloat(item.temperature) || 0;
+                const feels = parseFloat(item.feels_like) || temp;
                 const tempClass = temp >= 0 ? 'positive-temp' : 'negative-temp';
                 const feelsClass = feels >= 0 ? 'positive-temp' : 'negative-temp';
                 
@@ -627,21 +653,10 @@
                 const windIcon = getWindIcon(item.wind_direction);
                 
                 // Форматируем дату/время
-                let displayTime = 'н/д';
-                if (item.timestamp) {
-                    try {
-                        const dt = new Date(item.timestamp);
-                        displayTime = dt.toLocaleString('ru-RU', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                        });
-                    } catch (e) {
-                        displayTime = item.timestamp.substring(0, 16);
-                    }
-                }
+                const displayTime = formatDateTime(item.timestamp);
+                
+                // Форматируем видимость (преобразуем км в метры)
+                const visibility = formatVisibility(item.visibility);
                 
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -665,7 +680,7 @@
                         <i class="${windIcon}"></i> ${item.wind_speed || 'н/д'} м/с ${item.wind_direction ? '(' + item.wind_direction + ')' : ''}
                     </td>
                     <td>
-                        <i class="fas fa-eye"></i> ${item.visibility ? (item.visibility / 1000).toFixed(1) + ' км' : 'н/д'}
+                        <i class="fas fa-eye"></i> ${visibility}
                     </td>
                     <td>
                         <i class="fas fa-city"></i> ${item.city || 'н/д'}
@@ -675,118 +690,23 @@
             });
         }
 
-        // Функция обновления статистики (работает с полными данными)
-        function updateWeatherStats(data) {
-            const statsContainer = document.getElementById('statsContainer');
-            
-            // Рассчитываем статистику
-            const temps = data.map(item => item.temperature).filter(t => t != null);
-            const avgTemp = temps.length > 0 ? (temps.reduce((a, b) => a + b) / temps.length).toFixed(1) : 'н/д';
-            const minTemp = temps.length > 0 ? Math.min(...temps).toFixed(1) : 'н/д';
-            const maxTemp = temps.length > 0 ? Math.max(...temps).toFixed(1) : 'н/д';
-            
-            const pressures = data.map(item => item.pressure_mmhg).filter(p => p != null);
-            const avgPressure = pressures.length > 0 ? (pressures.reduce((a, b) => a + b) / pressures.length).toFixed(1) : 'н/д';
-            
-            const humidities = data.map(item => item.humidity).filter(h => h != null);
-            const avgHumidity = humidities.length > 0 ? (humidities.reduce((a, b) => a + b) / humidities.length).toFixed(0) : 'н/д';
-            
-            const cities = [...new Set(data.map(item => item.city))];
-            
-            statsContainer.innerHTML = `
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-thermometer-half"></i></div>
-                    <div class="stat-label">Средняя температура</div>
-                    <div class="stat-value">${avgTemp}°C</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-temperature-high"></i></div>
-                    <div class="stat-label">Максимальная</div>
-                    <div class="stat-value">${maxTemp}°C</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-temperature-low"></i></div>
-                    <div class="stat-label">Минимальная</div>
-                    <div class="stat-value">${minTemp}°C</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-tachometer-alt"></i></div>
-                    <div class="stat-label">Среднее давление</div>
-                    <div class="stat-value">${avgPressure} мм</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-tint"></i></div>
-                    <div class="stat-label">Средняя влажность</div>
-                    <div class="stat-value">${avgHumidity}%</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-map-marked-alt"></i></div>
-                    <div class="stat-label">Города</div>
-                    <div class="stat-value">${cities.length}</div>
-                </div>
-            `;
-        }
-        
-        // Функция обновления таблицы
-        function updateWeatherTable(data) {
-            const tbody = document.getElementById('weatherTableBody');
-            tbody.innerHTML = '';
-            
-            data.forEach(item => {
-                const tempClass = item.temperature >= 0 ? 'positive-temp' : 'negative-temp';
-                const feelsClass = item.feels_like >= 0 ? 'positive-temp' : 'negative-temp';
-                const weatherIcon = getWeatherIcon(item.weather_description);
-                const windIcon = getWindIcon(item.wind_direction);
-                
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${formatDateTime(item.timestamp)}</td>
-                    <td class="temp-cell ${tempClass}">
-                        <i class="fas fa-thermometer-half"></i> ${item.temperature}°C
-                    </td>
-                    <td class="${feelsClass}">
-                        ${item.feels_like}°C
-                    </td>
-                    <td>
-                        <i class="${weatherIcon}"></i> ${item.weather_description}
-                    </td>
-                    <td>
-                        <i class="fas fa-tint"></i> ${item.humidity}%
-                    </td>
-                    <td>
-                        <i class="fas fa-tachometer-alt"></i> ${item.pressure_mmhg} мм рт.ст.
-                    </td>
-                    <td>
-                        <i class="${windIcon}"></i> ${item.wind_speed} м/с ${item.wind_direction ? '(' + item.wind_direction + ')' : ''}
-                    </td>
-                    <td>
-                        <i class="fas fa-eye"></i> ${item.visibility ? (item.visibility / 1000).toFixed(1) + ' км' : 'н/д'}
-                    </td>
-                    <td>
-                        <i class="fas fa-city"></i> ${item.city}
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-        
         // Функция обновления статистики
         function updateWeatherStats(data) {
             const statsContainer = document.getElementById('statsContainer');
             
             // Рассчитываем статистику
-            const temps = data.map(item => item.temperature).filter(t => t != null);
+            const temps = data.map(item => parseFloat(item.temperature)).filter(t => !isNaN(t));
             const avgTemp = temps.length > 0 ? (temps.reduce((a, b) => a + b) / temps.length).toFixed(1) : 'н/д';
             const minTemp = temps.length > 0 ? Math.min(...temps).toFixed(1) : 'н/д';
             const maxTemp = temps.length > 0 ? Math.max(...temps).toFixed(1) : 'н/д';
             
-            const pressures = data.map(item => item.pressure_mmhg).filter(p => p != null);
+            const pressures = data.map(item => parseFloat(item.pressure_mmhg)).filter(p => !isNaN(p));
             const avgPressure = pressures.length > 0 ? (pressures.reduce((a, b) => a + b) / pressures.length).toFixed(1) : 'н/д';
             
-            const humidities = data.map(item => item.humidity).filter(h => h != null);
+            const humidities = data.map(item => parseFloat(item.humidity)).filter(h => !isNaN(h));
             const avgHumidity = humidities.length > 0 ? (humidities.reduce((a, b) => a + b) / humidities.length).toFixed(0) : 'н/д';
             
-            const cities = [...new Set(data.map(item => item.city))];
+            const cities = [...new Set(data.map(item => item.city || '').filter(city => city))];
             
             statsContainer.innerHTML = `
                 <div class="stat-card">
@@ -835,7 +755,7 @@
             const btn = document.getElementById('autoRefreshBtn');
             
             if (autoRefreshEnabled) {
-                btn.innerHTML = '<i class="fas fa-redo"></i> Автообновление: ВКЛ (60 сек)';
+                btn.innerHTML = '<i class="fas fa-redo"></i> Автообновление: ВКЛ (10 минут)';
                 btn.classList.add('primary');
                 autoRefreshInterval = setInterval(loadWeatherData, 600000); // раз 10 минуту
             } else {

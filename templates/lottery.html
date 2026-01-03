@@ -261,54 +261,68 @@
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
+            table-layout: fixed;
         }
         
         th {
             background: #f7fafc;
-            padding: 15px;
-            text-align: left;
+            padding: 18px 15px;
+            text-align: center;
             color: #4a5568;
-            border-bottom: 2px solid #e2e8f0;
+            border-bottom: 3px solid #9b59b6;
             position: sticky;
             top: 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
         }
         
         td {
-            padding: 12px 15px;
+            padding: 15px;
             border-bottom: 1px solid #e2e8f0;
             color: #4a5568;
+            text-align: center;
+            vertical-align: middle;
         }
         
         tr:hover {
-            background: #f7fafc;
+            background: linear-gradient(135deg, rgba(155, 89, 182, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
         }
 
         .nowrap-cell {
             white-space: nowrap;
-            min-width: 160px;
+        }
+        
+        .number-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding: 5px;
         }
         
         .number {
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
             color: white;
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
-            display: inline-block;
-            text-align: center;
-            line-height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-weight: bold;
-            margin: 2px;
+            font-size: 1rem;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease;
+        }
+        
+        .number:hover {
+            transform: scale(1.1);
         }
         
         .number.field2 {
             background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-        }
-        
-        .weather-cell {
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }
         
         .pagination {
@@ -327,18 +341,76 @@
             border-radius: 10px;
             cursor: pointer;
             transition: all 0.3s ease;
+            font-weight: 500;
         }
         
         .page-btn:hover {
             background: #cbd5e0;
+            transform: translateY(-2px);
         }
         
         .page-btn.active {
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
             color: white;
+            box-shadow: 0 4px 8px rgba(240, 147, 251, 0.3);
+        }
+        
+        /* КОЛОНКИ ТАБЛИЦЫ */
+        .tirage-column {
+            width: 12%;
+            font-weight: 600;
+            color: #9b59b6;
+        }
+        
+        .date-column {
+            width: 15%;
+        }
+        
+        .time-column {
+            width: 10%;
+        }
+        
+        .field1-column {
+            width: 20%;
+        }
+        
+        .field2-column {
+            width: 20%;
+        }
+        
+        .created-column {
+            width: 15%;
+            color: #718096;
+            font-size: 0.9rem;
         }
         
         /* АДАПТИВНОСТЬ */
+        @media (max-width: 992px) {
+            table {
+                table-layout: auto;
+            }
+            
+            .tirage-column,
+            .date-column,
+            .time-column,
+            .field1-column,
+            .field2-column,
+            .created-column {
+                width: auto;
+            }
+            
+            th, td {
+                padding: 12px 10px;
+                font-size: 0.95rem;
+            }
+            
+            .number {
+                width: 30px;
+                height: 30px;
+                font-size: 0.9rem;
+            }
+        }
+        
         @media (max-width: 768px) {
             .page-container {
                 padding: 15px;
@@ -375,6 +447,15 @@
                 display: block;
                 overflow-x: auto;
             }
+            
+            th {
+                font-size: 1rem;
+                padding: 15px 8px;
+            }
+            
+            td {
+                padding: 12px 8px;
+            }
         }
         
         @media (max-width: 480px) {
@@ -400,6 +481,21 @@
             .control-btn {
                 width: 100%;
                 justify-content: center;
+            }
+            
+            .number-container {
+                gap: 4px;
+            }
+            
+            .number {
+                width: 26px;
+                height: 26px;
+                font-size: 0.8rem;
+            }
+            
+            th, td {
+                padding: 10px 5px;
+                font-size: 0.85rem;
             }
         }
     </style>
@@ -498,15 +594,12 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Тираж</th>
-                                <th>Дата</th>
-                                <th>Время</th>
-                                <th>Поле 1</th>
-                                <th>Поле 2</th>
-                                <th>Температура</th>
-                                <th>Погода</th>
-                                <th>Давление</th>
-                                <th>Добавлен</th>
+                                <th class="tirage-column">Тираж №</th>
+                                <th class="date-column">Дата</th>
+                                <th class="time-column">Время</th>
+                                <th class="field1-column">Поле 1</th>
+                                <th class="field2-column">Поле 2</th>
+                                <th class="created-column">Создано</th>
                             </tr>
                         </thead>
                         <tbody id="tableBody">
@@ -524,7 +617,7 @@
         <!-- ФУТЕР (ЕДИНЫЙ ДЛЯ ВСЕХ СТРАНИЦ) -->
         <footer class="main-footer">
             <p>&copy; 2025 LottoMeteoStats. Проект для анализа лотерейных данных</p>
-            <p class="version">Версия: {{ version if version else '1.2.1' }} | Лотерейные данные</p>
+            <p class="version">Версия: {{ version if version else '1.2.2' }} | Лотерейные данные</p>
         </footer>
     </div>
 
@@ -586,29 +679,31 @@
                 
                 const numbers1 = field1.map(num => 
                     `<span class="number">${num}</span>`
-                ).join(' ');
+                ).join('');
                 
                 const numbers2 = field2.map(num => 
                     `<span class="number field2">${num}</span>`
-                ).join(' ');
+                ).join('');
                 
-                const weatherIcon = getWeatherIcon(item.weather);
                 const fullDate = item.date || item.draw_date || '';
                 const time = item.time || '';
+                const created = item.created_at || item.added_at || '-';
                 
                 row.innerHTML = `
-                    <td><strong>${item.tirage || item.draw_number}</strong></td>
-                    <td>${fullDate}</td>
-                    <td>${time}</td>
-                    <td class="nowrap-cell">${numbers1}</td>
-                    <td class="nowrap-cell">${numbers2}</td>
-                    <td>${item.temperature ? item.temperature + '°C' : '-'}</td>
-                    <td class="weather-cell">
-                        ${weatherIcon}
-                        <span>${item.weather || '-'}</span>
+                    <td class="tirage-column"><strong>${item.tirage || item.draw_number}</strong></td>
+                    <td class="date-column">${fullDate}</td>
+                    <td class="time-column">${time}</td>
+                    <td class="field1-column">
+                        <div class="number-container">
+                            ${field1.map(num => `<span class="number">${num}</span>`).join('')}
+                        </div>
                     </td>
-                    <td>${item.pressure ? item.pressure + ' мм рт.ст.' : '-'}</td>
-                    <td>${item.created_at || item.added_at || '-'}</td>
+                    <td class="field2-column">
+                        <div class="number-container">
+                            ${field2.map(num => `<span class="number field2">${num}</span>`).join('')}
+                        </div>
+                    </td>
+                    <td class="created-column">${created}</td>
                 `;
                 
                 tableBody.appendChild(row);
@@ -697,20 +792,6 @@
             } catch {
                 return dateString;
             }
-        }
-        
-        function getWeatherIcon(weather) {
-            if (!weather) return '<i class="fas fa-question"></i>';
-            
-            const weatherLower = weather.toLowerCase();
-            
-            if (weatherLower.includes('ясн')) return '<i class="fas fa-sun"></i>';
-            if (weatherLower.includes('пасмурн') || weatherLower.includes('облач')) return '<i class="fas fa-cloud"></i>';
-            if (weatherLower.includes('снег')) return '<i class="fas fa-snowflake"></i>';
-            if (weatherLower.includes('дожд')) return '<i class="fas fa-cloud-rain"></i>';
-            if (weatherLower.includes('туман')) return '<i class="fas fa-smog"></i>';
-            
-            return '<i class="fas fa-cloud"></i>';
         }
         
         setInterval(refreshData, 600000);
