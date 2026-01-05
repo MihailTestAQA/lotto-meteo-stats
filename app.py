@@ -473,7 +473,7 @@ def get_lottery_data():
 
 @app.route('/api/weather/current')
 def get_current_weather():
-    """Получить текущую погоду"""
+    #Получить текущую погоду
     try:
         from src.parsers.weather_parser import WeatherParser
         parser = WeatherParser()
@@ -506,7 +506,7 @@ def get_current_weather():
 
 @app.route('/api/weather/history')
 def get_weather_history():
-    """API для получения исторических данных погоды"""
+    # API для получения исторических данных погоды
     try:
         import sqlite3
         import os
@@ -628,7 +628,7 @@ def test_weather_api():
 # Функции для парсинга
 @app.route('/api/run-parser', methods=['POST'])
 def run_parser_api():
-    """API для запуска парсера"""
+    #API для запуска парсера
     try:
         print("🔄 API: Запуск парсера...")
         
@@ -679,7 +679,7 @@ def run_parser_api():
 
 @app.route('/api/felix-pila/analysis')
 def get_felix_pila_analysis():
-    """API для анализа связи погоды и чисел"""
+    # API для анализа связи погоды и чисел
     try:
         # Получаем данные из обеих таблиц
         lottery_data = get_lottery_data()
@@ -702,7 +702,7 @@ def get_felix_pila_analysis():
 
 @app.route('/api/felix-pila/predict')
 def get_felix_pila_predict():
-    """API для прогноза на основе текущей погоды"""
+    # API для прогноза на основе текущей погоды
     try:
         # Получаем текущую погоду
         current_weather = get_current_weather()
@@ -736,8 +736,7 @@ def inject_version():
     return dict(version=app_version)
 
 def get_lottery_data():
-    """Получение данных лотереи"""# ---------------------------------------------------------
-    # Используем твою существующую функцию
+    # Получение данных лотереи Используем существующую функцию
     from flask import jsonify
     import sqlite3
     import os
@@ -774,7 +773,7 @@ def get_lottery_data():
     return data
 
 def get_weather_data():
-    """Получение данных погоды"""
+    # Получение данных погоды
     try:
         import sqlite3
         import os
@@ -808,8 +807,8 @@ def get_weather_data():
     except:
         return []
 
-def analyze_by_humidity(lottery_data, weather_data):
-    """Анализ чисел по влажности"""
+def analyze_by_humidity(lottery_data, weather_data): #==========================
+    # Анализ чисел по влажности
     return {
         "low_humidity": [2, 6, 10, 14, 18],
         "medium_humidity": [3, 7, 11, 15, 19],
@@ -818,16 +817,16 @@ def analyze_by_humidity(lottery_data, weather_data):
     }
 
 def analyze_by_weather_type(lottery_data, weather_data):
-    """Анализ чисел по типу погоды"""
+    # Анализ чисел по типу погоды
     return {
         "sunny": [4, 8, 12, 16, 20],
         "cloudy": [2, 6, 10, 14, 18],
         "rainy": [1, 5, 9, 13, 17],
         "snowy": [3, 7, 11, 15, 19]
-    }#------------------------------------------------------------------
+    }
 
 def analyze_by_temperature(lottery_data, weather_data):
-    """Анализ чисел по температуре"""
+    # Анализ чисел по температуре
     # Реальная логика анализа
     # Пока вернем демо-данные
     return {
@@ -838,7 +837,7 @@ def analyze_by_temperature(lottery_data, weather_data):
     }
 
 def analyze_by_pressure(lottery_data, weather_data):
-    """Анализ чисел по давлению"""
+    # Анализ чисел по давлению
     return {
         "low_pressure": [6, 10, 13, 17, 19],
         "normal_pressure": [2, 5, 9, 12, 15],
@@ -847,7 +846,7 @@ def analyze_by_pressure(lottery_data, weather_data):
     }
 
 def predict_numbers(current_weather, lottery_data, weather_data):
-    """Прогнозирование чисел на основе погоды"""
+    # Прогнозирование чисел на основе погоды
     # Базовая логика предсказания
     import random
     
@@ -874,7 +873,7 @@ def predict_numbers(current_weather, lottery_data, weather_data):
     }
 
 def generate_demo_prediction():
-    """Генерация демо-прогноза"""
+    # Генерация демо-прогноза
     import random
     numbers = random.sample(range(1, 21), 10)
     return {
@@ -888,7 +887,7 @@ def generate_demo_prediction():
     }
 
 def generate_demo_weather():
-    """Генерация демо-данных о погоде"""
+    # Генерация демо-данных о погоде
     return {
         "temperature": 18.5,
         "pressure": 1013,
@@ -899,28 +898,28 @@ def generate_demo_weather():
     }
 
 def calculate_confidence(prediction):
-    """Расчет уверенности в прогнозе"""
+    # Расчет уверенности в прогнозе  ====================================
     # Базовая логика
-    return 0.65
+    return 0.75
 
 def get_current_weather():
-    """Получение текущей погоды"""
+    # Получение текущей погоды
     # Здесь должна быть логика получения реальных данных
     # Пока вернем демо
     return generate_demo_weather()
 
 def get_top_weather_combinations(lottery_data, weather_data):
-    """Топ комбинации погода-числа"""
+    # Топ комбинации погода-числа
     return [
         {"weather": "ясно", "numbers": [7, 14, 3], "frequency": 12},
         {"weather": "дождь", "numbers": [5, 12, 18], "frequency": 8},
         {"weather": "облачно", "numbers": [2, 9, 16], "frequency": 10},
         {"weather": "туман", "numbers": [1, 8, 15], "frequency": 4},
         {"weather": "ветрено", "numbers": [4, 11, 19], "frequency": 6}
-    ]
+    ]#================================================================================================================
 
 def job_lottery_with_weather():
-    """Собирает лотерею и сразу привязывает текущую погоду"""
+    # Собирает лотерею и сразу привязывает текущую погоду
     print(f"\n{'='*50}")
     print(f"⏰ Автосбор лотереи + погода: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"{'='*50}")
@@ -955,7 +954,7 @@ def job_lottery_with_weather():
         return False
 
 def job_weather_only():
-    """Задача: только сбор погоды"""
+    # Задача: сбор погоды
     print(f"🌤️ Сбор погоды: {datetime.now().strftime('%H:%M:%S')}")
     try:
         from src.parsers.weather_parser import WeatherParser
@@ -963,38 +962,38 @@ def job_weather_only():
         weather = parser.get_current_weather()
         
         if weather:
-            # ВАЖНО: оба метода должны вызываться!
+            # оба метода должны вызываться!
             parser.save_weather_to_db(weather)
             parser.update_latest_weather_to_lottery(weather)  # ← ЭТОГО НЕТ!
             print(f"✅ Погода сохранена: {weather['temperature']}°C")
     except Exception as e:
-        print(f"❌ Ошибка сбора погоды: {e}")
+        print(f"❌ Ошибка сбора погоды: {e}") #====================================
 
 
 
 # CLI КОМАНДЫ (оставляем эти)
 @app.cli.command("create-db")
 def create_db_command():
-    """Создать таблицы в базе данных"""
+    # Создать таблицы в базе данных
     with app.app_context():
         db.create_all()
     print("✅ Таблицы созданы")
 
 @app.cli.command("clear-db")
 def clear_db_command():
-    """Очистить базу данных"""
+    # Очистить базу данных
     with app.app_context():
         db.drop_all()
     print("🗑️ База данных очищена")
 
 @app.cli.command("parse-lottery")
 def parse_lottery_command():
-    """Запустить парсер лотереи"""
+    # Запустить парсер лотереи
     run_lottery_parser()
 
 @app.cli.command("collect-data")
 def collect_data_command():
-    """Собрать данные лотереи и погоды сейчас"""
+    # Собрать данные лотереи и погоды сейчас
     print("🔄 Сбор данных...")
     # Собираем лотерею
     run_lottery_parser()
@@ -1012,7 +1011,7 @@ def collect_data_command():
 
 @app.cli.command("init-project")
 def init_project_command():
-    """Инициализировать проект (первый запуск)"""
+    # Инициализировать проект (первый запуск)
     print("🚀 Инициализация проекта LottoMeteoStats...")
     
     # 1. Создаем БД
@@ -1034,10 +1033,10 @@ def init_project_command():
     print("🌐 Запустите: python app.py")
     print("📊 Откройте: http://localhost:5000")
 
-# ФОНГОВЫЙ ПЛАНИРОВЩИК (НОВАЯ ВЕРСИЯ)
+# ФОНГОВЫЙ ПЛАНИРОВЩИК
 
 def scheduler_loop():
-    """Фоновый цикл планировщика"""
+    # Фоновый цикл планировщика
     def job_lottery_with_weather():
         """Задача: сбор лотереи и привязка погоды"""
         print(f"\n⏰ Сбор лотереи+погоды: {datetime.now().strftime('%H:%M:%S')}")
@@ -1068,7 +1067,7 @@ def scheduler_loop():
             print(f"❌ Ошибка в задаче: {e}")
 
     def job_weather_only():
-        """Задача: только сбор погоды"""
+        # Задача: только сбор погоды
         print(f"🌤️ Сбор погоды: {datetime.now().strftime('%H:%M:%S')}")
         try:
             from src.parsers.weather_parser import WeatherParser
@@ -1085,16 +1084,17 @@ def scheduler_loop():
     print("✅ Планировщик настроен. Расписание:")
     
     # Основные времена лотереи (с привязкой погоды)
-    lottery_times = ["10:00", "12:07", "13:52", "16:07", "16:22", "18:00", "20:07", "22:00"]
+    lottery_times = ["10:00", "12:00", "13:00", "14:00", "16:00", "16:22", "18:00", "20:07", "22:00", "23:22"]
     for t in lottery_times:
         schedule.every().day.at(t).do(job_lottery_with_weather)
         print(f"  • Лотерея+погода в {t}")
     
-    # Погода каждый час (кроме времени лотереи)
+    # Погода каждые 30 минут (кроме времени лотереи)
     for hour in range(8, 24):  # с 8:00 до 23:00
-        time_str = f"{hour:02d}:30"  # в 30 минут каждого часа
-        if time_str not in lottery_times:
-            schedule.every().day.at(time_str).do(job_weather_only)
+        for minute in [0, 30]:  # каждые 30 минут
+            time_str = f"{hour:02d}:{minute:02d}"
+            if time_str not in lottery_times:
+                schedule.every().day.at(time_str).do(job_weather_only)
     
     # Бесконечный цикл планировщика
     while True:
@@ -1108,7 +1108,7 @@ def start_background_scheduler():
     scheduler_thread.start()
     print("✅ Фоновый планировщик запущен")
 
-# ОСНОВНОЙ БЛОК ЗАПУСКА
+# ОСНОВНОЙ БЛОК ЗАПУСКА=================================================================================================
 
 if __name__ == '__main__':
     print("=" * 60)
