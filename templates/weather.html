@@ -519,17 +519,16 @@
                 </div>
             </div>
         </main>
-
-        <!-- ФУТЕР (ЕДИНЫЙ ДЛЯ ВСЕХ СТРАНИЦ) -->
+        <!-- ФУТЕР -->
         <footer class="main-footer">
             <p>&copy; 2025 LottoMeteoStats. Проект для анализа лотерейных данных</p>
-            <p class="version">Версия: {{ version if version else '1.2.1' }} | Погодные данные</p>
+            <p class="version">Версия: {{ version }} | Погодные данные</p>
         </footer>
     </div>
 
     <script>
         let autoRefreshInterval = null;
-        let autoRefreshEnabled = false;
+        let autoRefreshEnabled = localStorage.getItem('weatherAutoRefresh') === 'true';
         
         // Функция для форматирования даты и времени
         function formatDateTime(timestamp) {
@@ -754,10 +753,13 @@
             autoRefreshEnabled = !autoRefreshEnabled;
             const btn = document.getElementById('autoRefreshBtn');
             
+            // Сохраняем состояние в localStorage
+            localStorage.setItem('weatherAutoRefresh', autoRefreshEnabled);
+            
             if (autoRefreshEnabled) {
                 btn.innerHTML = '<i class="fas fa-redo"></i> Автообновление: ВКЛ (10 минут)';
                 btn.classList.add('primary');
-                autoRefreshInterval = setInterval(loadWeatherData, 600000); // раз 10 минуту
+                autoRefreshInterval = setInterval(loadWeatherData, 600000);
             } else {
                 btn.innerHTML = '<i class="fas fa-redo"></i> Автообновление: ВЫКЛ';
                 btn.classList.remove('primary');
@@ -767,9 +769,21 @@
                 }
             }
         }
-        
+
         // Загружаем данные при загрузке страницы
         document.addEventListener('DOMContentLoaded', function() {
+            // Восстанавливаем состояние кнопки из localStorage
+            const btn = document.getElementById('autoRefreshBtn');
+            if (autoRefreshEnabled) {
+                btn.innerHTML = '<i class="fas fa-redo"></i> Автообновление: ВКЛ (10 минут)';
+                btn.classList.add('primary');
+                // Запускаем интервал если автообновление было включено
+                autoRefreshInterval = setInterval(loadWeatherData, 600000);
+            } else {
+                btn.innerHTML = '<i class="fas fa-redo"></i> Автообновление: ВЫКЛ';
+                btn.classList.remove('primary');
+            }
+            
             loadWeatherData();
             
             // Делаем функции доступными глобально

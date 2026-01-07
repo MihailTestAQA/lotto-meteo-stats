@@ -28,6 +28,12 @@
         height: fit-content;
     }
 
+    /* Или точнее - уменьшаем на 20px (5мм): */
+    .felix-card[style*="grid-column: span 2"] {
+        min-height: calc(100% - 30px);
+        margin-top: -10px; /* Поднимаем немного */
+    }
+
     .felix-card:hover {
         transform: translateY(-5px);
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
@@ -52,11 +58,23 @@
         margin: 20px 0;
     }
 
+    /* Делаем КОНТЕЙНЕРЫ полей одинаковыми */
     .field-container {
         background: #f8fafc;
         border-radius: 15px;
         padding: 20px;
         border: 2px solid #e2e8f0;
+        display: flex;
+        flex-direction: column;
+        
+        /* ВАЖНО: ФИКСИРУЕМ РАЗМЕРЫ */
+        min-height: 300px;  /* Минимальная высота */
+        height: 100%;       /* Растягиваем на доступную высоту */
+        width: 100%;        /* Занимаем всю ширину родителя */
+        min-width: 250px;   /* Минимальная ширина */
+        
+        /* Центрируем содержимое если нужно */
+        justify-content: flex-start; /* или center */
     }
 
     .field-title {
@@ -69,10 +87,16 @@
         font-size: 1.1rem;
     }
 
+    /* СЕТКА ЧИСЕЛ внутри поля - квадратная 2x2 */
     .field-numbers {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, 1fr); /* 2 колонки */
+        grid-template-rows: repeat(2, 1fr);    /* 2 строки */
         gap: 15px;
+        
+        /* Делаем контейнер квадратным или фиксированной высоты */
+        min-height: 200px;
+        height: 100%;
     }
 
     .field-1 .felix-number-item {
@@ -83,13 +107,29 @@
         background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
     }
 
+    /* Делаем КАЖДУЮ КАРТОЧКУ С ЧИСЛОМ квадратной */
     .felix-number-item {
-        border-radius: 15px;
-        padding: 20px 10px;
-        text-align: center;
+        /* Делаем квадрат */
+        aspect-ratio: 1 / 1; /* Это ключевое свойство! */
+        
+        /* Или фиксированные размеры если не работает aspect-ratio */
+        min-width: 60px;
+        min-height: 60px;
+        max-width: 100px;
+        max-height: 100px;
+        
+        /* Центрируем содержимое */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
         position: relative;
-        transition: all 0.3s ease;
+        
+        /* Стили */
+        border-radius: 15px;
+        padding: 10px;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
     }
 
     .felix-number-item:hover {
@@ -98,14 +138,15 @@
     }
 
     .felix-number-value {
-        font-size: 2rem;
+        font-size: 1.8rem; /* Уменьшаем если не влезает */
         font-weight: bold;
         color: white;
         text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        line-height: 1.2;
     }
 
     .felix-number-prob {
-        font-size: 0.9rem;
+        font-size: 0.8rem; /* Уменьшаем процент */
         color: rgba(255, 255, 255, 0.9);
         margin-top: 5px;
         font-weight: 500;
@@ -113,20 +154,19 @@
 
     .felix-number-rank {
         position: absolute;
-        top: 10px;
-        right: 10px;
+        top: 8px;
+        right: 8px;
         background: rgba(255, 255, 255, 0.3);
         border-radius: 50%;
-        width: 25px;
-        height: 25px;
-        font-size: 0.8rem;
+        width: 22px;
+        height: 22px;
+        font-size: 0.7rem;
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: bold;
         color: white;
     }
-
     /* ФИЛЬТРЫ */
     .felix-filters-section {
         background: white;
@@ -261,15 +301,12 @@
 
     /* ГРАФИК */
     .chart-wrapper {
-        background: #f8fafc;
-        border-radius: 15px;
-        padding: 20px;
-        margin-top: 20px;
-        border: 1px solid #e2e8f0;
+        min-height: 400px; /* +5мм ≈ 50px к стандартной 300px */
+        height: 100%;
     }
 
     .chart-container {
-        height: 300px;
+        height: 300px; /* Фиксированная высота */
         position: relative;
     }
 
@@ -487,40 +524,130 @@
     <div class="felix-filters-section">
         <h3><i class="fas fa-filter"></i> Фильтры анализа Felix Pila</h3>
         <div class="felix-filters-grid">
+            <!-- 1-я строка: Основные фильтры -->
             <div class="felix-filter-group">
-                <label>Тип погоды:</label>
+                <label><i class="fas fa-cloud-sun"></i> Тип погоды:</label>
                 <select id="weatherFilter" class="felix-filter-control">
-                    <option value="">Все погоды</option>
-                    <option value="ясно">Ясно</option>
-                    <option value="пасмурно">Пасмурно</option>
-                    <option value="дождь">Дождь</option>
-                    <option value="снег">Снег</option>
-                    <option value="туман">Туман</option>
+                    <option value="">Все погоды (загрузка...)</option>
+                    <!-- Динамически загрузим через JavaScript -->
                 </select>
             </div>
             
             <div class="felix-filter-group">
-                <label>Температурный режим:</label>
+                <label><i class="fas fa-thermometer-half"></i> Температура:</label>
                 <select id="tempFilter" class="felix-filter-control">
-                    <option value="">Все температуры</option>
-                    <option value="cold">Холодно (< 0°C)</option>
-                    <option value="cool">Прохладно (0-15°C)</option>
-                    <option value="warm">Тепло (16-25°C)</option>
-                    <option value="hot">Жарко (> 25°C)</option>
+                    <option value="">Любая температура</option>
+                    <option value="-50_-45">-50°C до -45°C</option>
+                    <option value="-45_-40">-45°C до -40°C</option>
+                    <option value="-40_-35">-40°C до -35°C</option>
+                    <option value="-35_-30">-35°C до -30°C</option>
+                    <option value="-30_-25">-30°C до -25°C</option>
+                    <option value="-25_-20">-25°C до -20°C</option>
+                    <option value="-20_-15">-20°C до -15°C</option>
+                    <option value="-15_-10">-15°C до -10°C</option>
+                    <option value="-10_-5">-10°C до -5°C</option>
+                    <option value="-5_0">-5°C до 0°C</option>
+                    <option value="0_5">0°C до 5°C</option>
+                    <option value="5_10">5°C до 10°C</option>
+                    <option value="10_15">10°C до 15°C</option>
+                    <option value="15_20">15°C до 20°C</option>
+                    <option value="20_25">20°C до 25°C</option>
+                    <option value="25_30">25°C до 30°C</option>
+                    <option value="30_35">30°C до 35°C</option>
+                    <option value="35_40">35°C до 40°C</option>
+                    <option value="40_45">40°C до 45°C</option>
+                    <option value="45_50">45°C до 50°C</option>
                 </select>
             </div>
             
+            <!-- 2-я строка: Новые фильтры -->
+            <div class="felix-filter-group">
+                <label><i class="fas fa-tint"></i> Влажность:</label>
+                <select id="humidityFilter" class="felix-filter-control">
+                    <option value="">Любая влажность</option>
+                    <option value="0_10">0-10%</option>
+                    <option value="10_20">10-20%</option>
+                    <option value="20_30">20-30%</option>
+                    <option value="30_40">30-40%</option>
+                    <option value="40_50">40-50%</option>
+                    <option value="50_60">50-60%</option>
+                    <option value="60_70">60-70%</option>
+                    <option value="70_80">70-80%</option>
+                    <option value="80_90">80-90%</option>
+                    <option value="90_100">90-100%</option>
+                </select>
+            </div>
+            
+            <div class="felix-filter-group">
+                <label><i class="fas fa-tachometer-alt"></i> Давление:</label>
+                <select id="pressureFilter" class="felix-filter-control">
+                    <option value="">Любое давление</option>
+                    <option value="730_735">730-735 мм</option>
+                    <option value="735_740">735-740 мм</option>
+                    <option value="740_745">740-745 мм</option>
+                    <option value="745_750">745-750 мм</option>
+                    <option value="750_755">750-755 мм</option>
+                    <option value="755_760">755-760 мм</option>
+                    <option value="760_765">760-765 мм</option>
+                    <option value="765_770">765-770 мм</option>
+                    <option value="770_775">770-775 мм</option>
+                </select>
+            </div>
+            
+            <!-- 3-я строка: Ветер и Луна -->
+            <div class="felix-filter-group">
+                <label><i class="fas fa-wind"></i> Скорость ветра:</label>
+                <select id="windSpeedFilter" class="felix-filter-control">
+                    <option value="">Любая скорость</option>
+                    <option value="0_5">0-5 м/с (штиль)</option>
+                    <option value="5_10">5-10 м/с (легкий)</option>
+                    <option value="10_15">10-15 м/с (умеренный)</option>
+                    <option value="15_20">15-20 м/с (сильный)</option>
+                    <option value="20_25">20-25 м/с (шторм)</option>
+                    <option value="25_30">25-30 м/с (ураган)</option>
+                    <option value="30_35">30-35 м/с</option>
+                    <option value="35_40">35-40 м/с</option>
+                </select>
+            </div>
+            
+            <div class="felix-filter-group">
+                <label><i class="fas fa-compass"></i> Направление ветра:</label>
+                <select id="windDirectionFilter" class="felix-filter-control">
+                    <option value="">Любое направление</option>
+                    <option value="север">Север (N)</option>
+                    <option value="северо-восток">Северо-восток (NE)</option>
+                    <option value="восток">Восток (E)</option>
+                    <option value="юго-восток">Юго-восток (SE)</option>
+                    <option value="юг">Юг (S)</option>
+                    <option value="юго-запад">Юго-запад (SW)</option>
+                    <option value="запад">Запад (W)</option>
+                    <option value="северо-запад">Северо-запад (NW)</option>
+                </select>
+            </div>
+            
+            <div class="felix-filter-group">
+                <label><i class="fas fa-moon"></i> Фаза Луны:</label>
+                <select id="moonFilter" class="felix-filter-control">
+                    <option value="">Любая фаза</option>
+                    <option value="new">Новолуние</option>
+                    <option value="waxing">Растущая</option>
+                    <option value="full">Полнолуние</option>
+                    <option value="waning">Убывающая</option>
+                </select>
+            </div>
+            
+            <!-- Кнопки -->
             <div class="felix-filter-actions">
-                <button onclick="loadAnalysis()" class="felix-filter-btn primary">
-                    <i class="fas fa-sync-alt"></i> Применить анализ
+                <button onclick="applyAnalysis()" class="felix-filter-btn primary">
+                    <i class="fas fa-filter"></i> Применить фильтры
                 </button>
                 <button onclick="resetFelixFilters()" class="felix-filter-btn secondary">
-                    <i class="fas fa-redo"></i> Сбросить
+                    <i class="fas fa-redo"></i> Сбросить все
                 </button>
             </div>
         </div>
         
-        <!-- ИНДИКАТОРЫ ДАННЫХ - ИСПРАВЛЕННЫЕ ЦВЕТА -->
+        <!-- ИНДИКАТОРЫ ДАННЫХ -->
         <div class="data-indicators">
             <div class="data-indicator api" id="dbIndicator">
                 <i class="fas fa-database"></i>
@@ -571,29 +698,29 @@
             </div>
         </div>
 
-        <!-- ИНСАЙТЫ -->
+        <!-- РАСШИРЕННЫЕ ИНСАЙТЫ -->
         <div class="felix-card" style="grid-column: span 2;">
-            <h2><i class="fas fa-lightbulb"></i> Ключевые выводы</h2>
+            <h2><i class="fas fa-chart-network"></i> Расширенный анализ</h2>
             <div class="insights-grid">
                 <div class="insight-card">
-                    <i class="fas fa-sun"></i>
-                    <h3>В ясную погоду чаще выпадают:</h3>
-                    <div id="sunnyNumbers" class="insight-numbers">Загрузка...</div>
+                    <i class="fas fa-tint"></i>
+                    <h3>При высокой влажности (>70%):</h3>
+                    <div id="highHumidityNumbers" class="insight-numbers">Загрузка...</div>
                 </div>
                 <div class="insight-card">
-                    <i class="fas fa-cloud-rain"></i>
-                    <h3>В дождливую погоду чаще выпадают:</h3>
-                    <div id="rainyNumbers" class="insight-numbers">Загрузка...</div>
+                    <i class="fas fa-tachometer-alt"></i>
+                    <h3>При высоком давлении (>760 мм):</h3>
+                    <div id="highPressureNumbers" class="insight-numbers">Загрузка...</div>
                 </div>
                 <div class="insight-card">
-                    <i class="fas fa-temperature-low"></i>
-                    <h3>При низком давлении чаще выпадают:</h3>
-                    <div id="lowPressureNumbers" class="insight-numbers">Загрузка...</div>
+                    <i class="fas fa-wind"></i>
+                    <h3>При сильном ветре (>15 м/с):</h3>
+                    <div id="strongWindNumbers" class="insight-numbers">Загрузка...</div>
                 </div>
                 <div class="insight-card">
-                    <i class="fas fa-temperature-high"></i>
-                    <h3>В теплую погоду чаще выпадают:</h3>
-                    <div id="warmNumbers" class="insight-numbers">Загрузка...</div>
+                    <i class="fas fa-moon"></i>
+                    <h3>В полнолуние чаще:</h3>
+                    <div id="fullMoonNumbers" class="insight-numbers">Загрузка...</div>
                 </div>
             </div>
         </div>
@@ -604,9 +731,51 @@
 <script>
 // === РАБОЧИЙ JavaScript КОД ===
 
+// БЛОК 1: ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ И БАЗОВЫЕ ФУНКЦИИ
 let dataSource = 'demo'; // 'real', 'demo', 'mixed'
 
-// 1. ПРОВЕРКА ИСТОЧНИКОВ ДАННЫХ
+/**
+ * Функция обновления статус бара
+ */
+function updateStatusBar(source = null) {
+    const dataSourceDot = document.getElementById('dataSourceDot');
+    const dataSourceText = document.getElementById('dataSourceText');
+    const accuracyText = document.getElementById('accuracyText');
+    
+    if (!dataSourceDot || !dataSourceText) return;
+    
+    const actualSource = source || dataSource;
+    
+    if (actualSource === 'real') {
+        dataSourceDot.className = 'status-dot real';
+        dataSourceText.textContent = 'Используются реальные данные из БД и API';
+        dataSourceText.style.color = '#27ae60';
+    } else if (actualSource === 'mixed') {
+        dataSourceDot.className = 'status-dot demo';
+        dataSourceText.textContent = 'Используются смешанные данные (БД + демо)';
+        dataSourceText.style.color = '#f39c12';
+    } else {
+        dataSourceDot.className = 'status-dot demo';
+        dataSourceText.textContent = 'Используются демонстрационные данные';
+        dataSourceText.style.color = '#f39c12';
+    }
+    
+    if (accuracyText) {
+        accuracyText.textContent = 'Точность: загрузка...';
+    }
+}
+
+/**
+ * Вспомогательная функция для отображения чисел в инсайтах
+ */
+function renderNumbers(numbers) {
+    if (!Array.isArray(numbers)) return '';
+    return numbers.map(num => 
+        `<div class="insight-number-badge">${num}</div>`
+    ).join('');
+}
+
+// БЛОК 2: ФУНКЦИИ ПРОВЕРКИ ИСТОЧНИКОВ ДАННЫХ
 async function checkDataSources() {
     console.log("🔍 Проверка источников данных...");
     
@@ -668,169 +837,389 @@ async function checkDataSources() {
     updateStatusBar();
 }
 
-// 2. ОБНОВЛЕНИЕ СТАТУС БАРА
-function updateStatusBar() {
-    const dataSourceDot = document.getElementById('dataSourceDot');
-    const dataSourceText = document.getElementById('dataSourceText');
-    
-    if (dataSource === 'real') {
-        dataSourceDot.className = 'status-dot real';
-        dataSourceText.textContent = 'Используются реальные данные из БД и API';
-        dataSourceText.style.color = '#27ae60';
-    } else if (dataSource === 'mixed') {
-        dataSourceDot.className = 'status-dot demo';
-        dataSourceText.textContent = 'Используются смешанные данные (БД + демо)';
-        dataSourceText.style.color = '#f39c12';
-    } else {
-        dataSourceDot.className = 'status-dot demo';
-        dataSourceText.textContent = 'Используются демонстрационные данные';
-        dataSourceText.style.color = '#f39c12';
+// БЛОК 3: ФУНКЦИИ ЗАГРУЗКИ ТИПОВ ПОГОДЫ
+async function loadWeatherTypes() {
+    try {
+        console.log("🌤️ Загрузка типов погоды из БД...");
+        
+        const response = await fetch('/api/weather/types');
+        if (!response.ok) {
+            console.error("❌ Ошибка загрузки типов погоды");
+            initStaticWeatherTypes();
+            return;
+        }
+        
+        const data = await response.json();
+        if (!data.success || !data.types) {
+            console.log("📊 Нет данных о типах погоды");
+            initStaticWeatherTypes();
+            return;
+        }
+        
+        console.log(`🌤️ Найдено типов погоды: ${data.count}`, data.types);
+        
+        const weatherSelect = document.getElementById('weatherFilter');
+        if (!weatherSelect) {
+            console.error("❌ Элемент weatherFilter не найден");
+            return;
+        }
+        
+        const currentValue = weatherSelect.value;
+        weatherSelect.innerHTML = '';
+        
+        const allOption = document.createElement('option');
+        allOption.value = '';
+        allOption.textContent = 'Все погоды';
+        weatherSelect.appendChild(allOption);
+        
+        data.types.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item.type;
+            option.textContent = `${item.type} (${item.count} тиражей)`;
+            weatherSelect.appendChild(option);
+        });
+        
+        if (currentValue) weatherSelect.value = currentValue;
+        
+        console.log("✅ Типы погоды загружены");
+        
+    } catch (error) {
+        console.error("❌ Ошибка загрузки типов погоды:", error);
+        initStaticWeatherTypes();
     }
 }
 
-// 3. ПРОГНОЗ FELIX PILA - НОВАЯ ФУНКЦИЯ ДЛЯ 8 ЧИСЕЛ
+function initStaticWeatherTypes() {
+    const weatherSelect = document.getElementById('weatherFilter');
+    if (!weatherSelect) return;
+    
+    weatherSelect.innerHTML = '<option value="">Все погоды</option>';
+    
+    ['пасмурно', 'облачно с прояснениями', 'небольшой снег', 
+     'переменная облачность', 'ясно', 'дождь', 'туман'].forEach(type => {
+        const option = document.createElement('option');
+        option.value = type;
+        option.textContent = type;
+        weatherSelect.appendChild(option);
+    });
+}
+
+// БЛОК 4: ФУНКЦИИ ПРОГНОЗА FELIX PILA
+/**
+ * ОСНОВНАЯ ФУНКЦИЯ ЗАГРУЗКИ ПРОГНОЗА
+ */
 async function loadFelixPilaPrediction() {
     try {
-        const response = await fetch('/api/felix-pila/predict');
+        console.log("🚀 Запуск loadFelixPilaPrediction()");
         
-        if (response.ok) {
-            const data = await response.json();
+        // Собираем фильтры
+        const params = new URLSearchParams();
+        
+        const weatherFilter = document.getElementById('weatherFilter').value;
+        const tempFilter = document.getElementById('tempFilter').value;
+        const humidityFilter = document.getElementById('humidityFilter').value;
+        const pressureFilter = document.getElementById('pressureFilter').value;
+        const windSpeedFilter = document.getElementById('windSpeedFilter').value;
+        const windDirFilter = document.getElementById('windDirectionFilter').value;
+        const moonFilter = document.getElementById('moonFilter').value;
+        
+        if (weatherFilter) {
+            params.append('weather', weatherFilter);
+            console.log("🌤️ Фильтр погоды:", weatherFilter);
+        }
+        if (tempFilter) {
+            params.append('temp', tempFilter);
+            console.log("🌡️ Фильтр температуры:", tempFilter);
+        }
+        if (humidityFilter) params.append('humidity', humidityFilter);
+        if (pressureFilter) params.append('pressure', pressureFilter);
+        if (windSpeedFilter) params.append('wind_speed', windSpeedFilter);
+        if (windDirFilter) params.append('wind_dir', windDirFilter);
+        if (moonFilter) params.append('moon', moonFilter);
+        
+        const apiUrl = `/api/felix-pila/predict?${params}`;
+        console.log("📡 Запрос к API:", apiUrl);
+        
+        const response = await fetch(apiUrl);
+        console.log("📡 Статус ответа:", response.status, response.ok);
+        
+        if (!response.ok) {
+            console.error("❌ Ошибка HTTP:", response.status);
+            displayPrediction(null, true, false);
+            return;
+        }
+        
+        const data = await response.json();
+        console.log("📡 Получены данные:", data);
+        
+        // Проверяем есть ли данные
+        if (!data.success) {
+            console.log("❌ API вернул success: false", data.message);
+            displayPrediction(null, true, false);
+            return;
+        }
+        
+        if (!data.has_data || !data.prediction) {
+            console.log("📊 Нет данных для отображения");
+            displayPrediction(null, true, params.toString().length > 0);
             
-            if (data.success) {
-                displayPrediction(data.prediction);
-                document.getElementById('accuracyScore').textContent = 
-                    Math.round((data.confidence || 0.65) * 100) + '%';
-                dataSource = 'real';
-                updateStatusBar();
-                return;
+            // Обновляем точность с проверкой элемента
+            setTimeout(() => {
+                const accuracyScoreEl = document.getElementById('accuracyScore');
+                const accuracyTextEl = document.getElementById('accuracyText');
+                
+                if (accuracyScoreEl) {
+                    accuracyScoreEl.textContent = '0%';
+                }
+                if (accuracyTextEl) {
+                    accuracyTextEl.textContent = 'Точность: нет данных';
+                }
+            }, 100);
+            
+            return;
+        }
+        
+        console.log("✅ Прогноз получен:", data.prediction);
+        console.log("📊 Тиражей для анализа:", data.filtered_count);
+        console.log("🎯 Уверенность:", data.confidence);
+        
+        // Показываем прогноз
+        displayPrediction(data.prediction);
+        
+        // ЖДЕМ пока displayPrediction создаст элементы, потом обновляем точность
+        setTimeout(() => {
+            const accuracyScoreEl = document.getElementById('accuracyScore');
+            const accuracyTextEl = document.getElementById('accuracyText');
+            
+            if (accuracyScoreEl) {
+                accuracyScoreEl.textContent = Math.round((data.confidence || 0.65) * 100) + '%';
+            } else {
+                console.error("❌ Элемент accuracyScore не найден (еще не создан)");
+            }
+            
+            if (accuracyTextEl) {
+                accuracyTextEl.textContent = `Точность: ${Math.round((data.confidence || 0.65) * 100)}%`;
+            } else {
+                console.error("❌ Элемент accuracyText не найден");
+            }
+        }, 100);
+        
+        // Показываем сколько записей использовано
+        if (data.filtered_count) {
+            const badge = document.querySelector('.felix-info-badge');
+            if (badge) {
+                badge.innerHTML = `
+                    <i class="fas fa-chart-line"></i>
+                    Анализ на основе ${data.filtered_count} записей
+                `;
             }
         }
         
-        // ДЕМО-ДАННЫЕ
-        showDemoPrediction();
-        dataSource = 'demo';
-        updateStatusBar();
+        // Обновляем индикаторы
+        updateStatusBar('real');
         
     } catch (error) {
-        console.error('Ошибка прогноза:', error);
-        showDemoPrediction();
-        dataSource = 'demo';
-        updateStatusBar();
+        console.error('❌ Ошибка в loadFelixPilaPrediction:', error);
+        displayPrediction(null, true, true);
     }
 }
 
-function showDemoPrediction() {
-    // Генерируем 8 уникальных чисел для двух полей
-    const allNumbers = [];
-    while (allNumbers.length < 8) {
-        const num = Math.floor(Math.random() * 20) + 1;
-        if (!allNumbers.includes(num)) {
-            allNumbers.push(num);
-        }
-    }
-    
-    const field1Numbers = allNumbers.slice(0, 4);
-    const field2Numbers = allNumbers.slice(4, 8);
-    
-    displayPrediction({
-        field_1: field1Numbers.map(num => ({
-            number: num,
-            probability: Math.round(Math.random() * 20 + 70)
-        })),
-        field_2: field2Numbers.map(num => ({
-            number: num,
-            probability: Math.round(Math.random() * 20 + 70)
-        }))
+/**
+ * ФУНКЦИЯ ОТОБРАЖЕНИЯ ПРОГНОЗА (рабочая)
+ */
+function displayPrediction(prediction, noData = false, filtersApplied = false) {
+    console.log("🎨 displayPrediction вызвана с:", { 
+        prediction, 
+        noData, 
+        filtersApplied 
     });
     
-    document.getElementById('accuracyScore').textContent = '65%';
-    
-    // Обновляем индикатор точности
-    document.getElementById('accuracyText').textContent = 'Точность: 65% (демо)';
-    document.getElementById('accuracyDot').className = 'status-dot demo';
-}
-
-function displayPrediction(prediction) {
     const container = document.getElementById('weatherPrediction');
     container.innerHTML = '';
     
-    // Получаем числа для полей (или генерируем демо)
-    const field1 = prediction.field_1 || prediction.recommended_numbers?.slice(0, 4) || generateFieldNumbers(4);
-    const field2 = prediction.field_2 || prediction.recommended_numbers?.slice(4, 8) || generateFieldNumbers(4);
+    if (noData) {
+        let message = '';
+        
+        if (filtersApplied) {
+            message = `
+                <div style="text-align: center; padding: 40px 20px; color: #718096; grid-column: span 2;">
+                    <i class="fas fa-search" style="font-size: 3rem; margin-bottom: 20px; color: #f39c12;"></i>
+                    <h3 style="color: #e74c3c; margin-bottom: 10px;">
+                        <i class="fas fa-exclamation-triangle"></i> Нет данных для фильтров
+                    </h3>
+                    <p>В базе данных нет записей с выбранными параметрами погоды.</p>
+                    <p style="font-size: 0.9rem; margin-top: 15px; color: #95a5a6;">
+                        <i class="fas fa-lightbulb"></i> Попробуйте выбрать другие параметры или сбросить фильтры
+                    </p>
+                    <button onclick="resetFelixFilters()" style="margin-top: 20px; padding: 10px 20px; 
+                            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); 
+                            color: white; border: none; border-radius: 8px; cursor: pointer;
+                            font-weight: 500;">
+                        <i class="fas fa-redo"></i> Сбросить фильтры
+                    </button>
+                </div>
+            `;
+        } else {
+            message = `
+                <div style="text-align: center; padding: 40px 20px; color: #718096; grid-column: span 2;">
+                    <i class="fas fa-database" style="font-size: 3rem; margin-bottom: 20px; color: #f39c12;"></i>
+                    <h3 style="color: #e74c3c; margin-bottom: 10px;">
+                        <i class="fas fa-exclamation-triangle"></i> Данные отсутствуют
+                    </h3>
+                    <p>В базе данных нет записей для анализа.</p>
+                    <p style="font-size: 0.9rem; margin-top: 15px; color: #95a5a6;">
+                        <i class="fas fa-lightbulb"></i> Запустите парсер для сбора данных
+                    </p>
+                </div>
+            `;
+        }
+        
+        container.innerHTML = message;
+        return;
+    }
+    
+    // ВАЖНО: API возвращает prediction.field_1 и prediction.field_2 как массивы объектов
+    console.log("🎯 Структура prediction:", prediction);
+    console.log("🎯 field_1 тип:", typeof prediction.field_1, "значение:", prediction.field_1);
+    console.log("🎯 field_2 тип:", typeof prediction.field_2, "значение:", prediction.field_2);
+    
+    // Получаем числа для полей (из API приходят объекты {number: X, probability: Y})
+    const field1 = prediction.field_1 || [];
+    const field2 = prediction.field_2 || [];
+    
+    console.log("🎯 field_1 длина:", field1.length, "данные:", field1);
+    console.log("🎯 field_2 длина:", field2.length, "данные:", field2);
+    
+    // Проверяем есть ли хоть какие-то данные
+    if (field1.length === 0 && field2.length === 0) {
+        console.log("⚠️ Оба поля пустые");
+        container.innerHTML = `
+            <div style="text-align: center; padding: 30px; color: #718096; grid-column: span 2;">
+                <i class="fas fa-search" style="font-size: 2rem;"></i>
+                <p style="margin-top: 10px;">Нет данных для отображения</p>
+                <p style="font-size: 0.8rem; color: #95a5a6;">(поля field_1 и field_2 пустые)</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Создаем grid-контейнер для двух полей
+    const gridContainer = document.createElement('div');
+    gridContainer.className = 'prediction-grid';
+    container.appendChild(gridContainer);
     
     // Поле 1 (фиолетовое)
-    const field1Container = document.createElement('div');
-    field1Container.className = 'field-container field-1';
-    field1Container.innerHTML = `
-        <div class="field-title">
-            <i class="fas fa-star" style="color: #9b59b6;"></i>
-            <span>Поле 1</span>
-        </div>
-        <div class="field-numbers" id="field1Numbers"></div>
-    `;
+    if (field1.length > 0) {
+        console.log("🎨 Создаем поле 1 с", field1.length, "числами");
+        const field1Container = document.createElement('div');
+        field1Container.className = 'field-container field-1';
+        field1Container.innerHTML = `
+            <div class="field-title">
+                <i class="fas fa-star" style="color: #9b59b6;"></i>
+                <span>Поле 1</span>
+            </div>
+            <div class="field-numbers" id="field1Numbers"></div>
+        `;
+        gridContainer.appendChild(field1Container);
+        
+        const field1Numbers = field1Container.querySelector('#field1Numbers');
+        
+        field1.forEach((item, index) => {
+            // Обрабатываем разные форматы данных
+            let numValue, numProb;
+            
+            if (typeof item === 'object' && item !== null) {
+                // Формат: {number: X, probability: Y}
+                numValue = item.number;
+                numProb = item.probability || 70;
+            } else if (typeof item === 'number') {
+                // Формат: просто число
+                numValue = item;
+                numProb = 70;
+            } else {
+                // Неизвестный формат
+                console.warn("⚠️ Неизвестный формат данных в field_1:", item);
+                numValue = '?';
+                numProb = 0;
+            }
+            
+            console.log(`   → Число ${index + 1}: ${numValue} (${numProb}%)`);
+            
+            const numDiv = document.createElement('div');
+            numDiv.className = 'felix-number-item';
+            numDiv.innerHTML = `
+                <div class="felix-number-rank">${index + 1}</div>
+                <div class="felix-number-value">${numValue}</div>
+                <div class="felix-number-prob">${numProb}%</div>
+            `;
+            field1Numbers.appendChild(numDiv);
+        });
+    } else {
+        console.log("⚠️ Поле 1 пустое");
+    }
     
     // Поле 2 (синее)
-    const field2Container = document.createElement('div');
-    field2Container.className = 'field-container field-2';
-    field2Container.innerHTML = `
-        <div class="field-title">
-            <i class="fas fa-star" style="color: #3498db;"></i>
-            <span>Поле 2</span>
-        </div>
-        <div class="field-numbers" id="field2Numbers"></div>
-    `;
-    
-    container.appendChild(field1Container);
-    container.appendChild(field2Container);
-    
-    // Заполняем поле 1
-    const field1Numbers = document.getElementById('field1Numbers');
-    field1.forEach((item, index) => {
-        const numValue = typeof item === 'number' ? item : item.number;
-        const numProb = item.probability || Math.round(Math.random() * 20 + 70);
-        
-        const numDiv = document.createElement('div');
-        numDiv.className = 'felix-number-item';
-        numDiv.innerHTML = `
-            <div class="felix-number-rank">${index + 1}</div>
-            <div class="felix-number-value">${numValue}</div>
-            <div class="felix-number-prob">${numProb}%</div>
+    if (field2.length > 0) {
+        console.log("🎨 Создаем поле 2 с", field2.length, "числами");
+        const field2Container = document.createElement('div');
+        field2Container.className = 'field-container field-2';
+        field2Container.innerHTML = `
+            <div class="field-title">
+                <i class="fas fa-star" style="color: #3498db;"></i>
+                <span>Поле 2</span>
+            </div>
+            <div class="field-numbers" id="field2Numbers"></div>
         `;
-        field1Numbers.appendChild(numDiv);
-    });
-    
-    // Заполняем поле 2
-    const field2Numbers = document.getElementById('field2Numbers');
-    field2.forEach((item, index) => {
-        const numValue = typeof item === 'number' ? item : item.number;
-        const numProb = item.probability || Math.round(Math.random() * 20 + 70);
+        gridContainer.appendChild(field2Container);
         
-        const numDiv = document.createElement('div');
-        numDiv.className = 'felix-number-item';
-        numDiv.innerHTML = `
-            <div class="felix-number-rank">${index + 1}</div>
-            <div class="felix-number-value">${numValue}</div>
-            <div class="felix-number-prob">${numProb}%</div>
-        `;
-        field2Numbers.appendChild(numDiv);
-    });
-}
-
-function generateFieldNumbers(count) {
-    const numbers = [];
-    while (numbers.length < count) {
-        const num = Math.floor(Math.random() * 20) + 1;
-        if (!numbers.includes(num)) {
-            numbers.push({
-                number: num,
-                probability: Math.round(Math.random() * 20 + 70)
-            });
-        }
+        const field2Numbers = field2Container.querySelector('#field2Numbers');
+        
+        field2.forEach((item, index) => {
+            // Обрабатываем разные форматы данных
+            let numValue, numProb;
+            
+            if (typeof item === 'object' && item !== null) {
+                numValue = item.number;
+                numProb = item.probability || 70;
+            } else if (typeof item === 'number') {
+                numValue = item;
+                numProb = 70;
+            } else {
+                console.warn("⚠️ Неизвестный формат данных в field_2:", item);
+                numValue = '?';
+                numProb = 0;
+            }
+            
+            console.log(`   → Число ${index + 1}: ${numValue} (${numProb}%)`);
+            
+            const numDiv = document.createElement('div');
+            numDiv.className = 'felix-number-item';
+            numDiv.innerHTML = `
+                <div class="felix-number-rank">${index + 1}</div>
+                <div class="felix-number-value">${numValue}</div>
+                <div class="felix-number-prob">${numProb}%</div>
+            `;
+            field2Numbers.appendChild(numDiv);
+        });
+    } else {
+        console.log("⚠️ Поле 2 пустое");
     }
-    return numbers;
+    
+    // Если оба поля пустые (на всякий случай)
+    if (field1.length === 0 && field2.length === 0) {
+        gridContainer.innerHTML = `
+            <div class="field-container" style="text-align: center; padding: 30px; grid-column: span 2;">
+                <i class="fas fa-chart-line" style="font-size: 2rem; color: #f39c12; margin-bottom: 15px;"></i>
+                <h3 style="color: #4a5568;">Недостаточно данных</h3>
+                <p style="color: #718096;">Попробуйте другие настройки фильтров</p>
+            </div>
+        `;
+    }
+    
+    console.log("✅ Отображение завершено");
 }
 
-// 4. ИНСАЙТЫ
+// БЛОК 5: ФУНКЦИИ ИНСАЙТОВ
 async function loadInsights() {
     try {
         const response = await fetch('/api/felix-pila/analysis');
@@ -853,47 +1242,187 @@ async function loadInsights() {
     }
 }
 
-function showDemoInsights() {
-    document.getElementById('sunnyNumbers').innerHTML = renderNumbers([3, 7, 12, 16, 19]);
-    document.getElementById('rainyNumbers').innerHTML = renderNumbers([2, 8, 11, 15, 20]);
-    document.getElementById('lowPressureNumbers').innerHTML = renderNumbers([1, 5, 9, 13, 17]);
-    document.getElementById('warmNumbers').innerHTML = renderNumbers([4, 6, 10, 14, 18]);
-}
-
-function renderNumbers(numbers) {
-    return numbers.map(num => 
-        `<div class="insight-number-badge">${num}</div>`
-    ).join('');
-}
-
-// 5. АНАЛИЗ И ГРАФИК
-async function loadAnalysis() {
-    try {
-        const response = await fetch('/api/felix-pila/analysis');
-        
-        if (response.ok) {
-            const data = await response.json();
-            
-            if (data.success) {
-                showDemoChart();
-                dataSource = 'real';
-                updateStatusBar();
-                return;
-            }
-        }
-        
-        showDemoChart();
-        dataSource = 'demo';
-        updateStatusBar();
-        
-    } catch (error) {
-        console.error('Ошибка анализа:', error);
-        showDemoChart();
-        dataSource = 'demo';
-        updateStatusBar();
+function displayInsights(analysis) {
+    console.log("🎯 displayInsights вызвана с:", analysis);
+    
+    // Проверяем существуют ли элементы перед изменением
+    const highHumidityEl = document.getElementById('highHumidityNumbers');
+    const highPressureEl = document.getElementById('highPressureNumbers');
+    const strongWindEl = document.getElementById('strongWindNumbers');
+    const fullMoonEl = document.getElementById('fullMoonNumbers');
+    
+    if (!highHumidityEl || !highPressureEl || !strongWindEl || !fullMoonEl) {
+        console.error("❌ Не найдены элементы для отображения инсайтов");
+        return;
+    }
+    
+    if (analysis.by_humidity?.high?.field_1) {
+        highHumidityEl.innerHTML = renderNumbers(analysis.by_humidity.high.field_1);
+    } else {
+        highHumidityEl.innerHTML = '<span style="color: #718096;">Нет данных</span>';
+    }
+    
+    if (analysis.by_pressure?.high?.field_1) {
+        highPressureEl.innerHTML = renderNumbers(analysis.by_pressure.high.field_1);
+    } else {
+        highPressureEl.innerHTML = '<span style="color: #718096;">Нет данных</span>';
+    }
+    
+    if (analysis.by_weather?.sunny?.field_1) {
+        strongWindEl.innerHTML = renderNumbers(analysis.by_weather.sunny.field_1);
+    } else {
+        strongWindEl.innerHTML = '<span style="color: #718096;">Нет данных</span>';
+    }
+    
+    if (analysis.by_temperature?.warm?.field_1) {
+        fullMoonEl.innerHTML = renderNumbers(analysis.by_temperature.warm.field_1);
+    } else {
+        fullMoonEl.innerHTML = '<span style="color: #718096;">Нет данных</span>';
     }
 }
 
+function showDemoInsights() {
+    document.getElementById('highHumidityNumbers').innerHTML = renderNumbers([5, 9, 13, 17, 20]);
+    document.getElementById('highPressureNumbers').innerHTML = renderNumbers([2, 6, 10, 14, 18]);
+    document.getElementById('strongWindNumbers').innerHTML = renderNumbers([3, 7, 11, 15, 19]);
+    document.getElementById('fullMoonNumbers').innerHTML = renderNumbers([1, 4, 8, 12, 16]);
+}
+
+// БЛОК 6: ФУНКЦИИ АНАЛИЗА С ФИЛЬТРАМИ И ГРАФИКА
+/**
+ * ОСНОВНАЯ ФУНКЦИЯ АНАЛИЗА С ФИЛЬТРАМИ
+ */
+async function loadAnalysisWithFilters() {
+    console.log("🎯 loadAnalysisWithFilters: ТОЛЬКО при нажатии кнопки");
+    
+    // Показываем загрузку
+    document.getElementById('weatherPrediction').innerHTML = `
+        <div class="loading-state" style="grid-column: span 2;">
+            <div class="loading-spinner"></div>
+            <p>Применяем фильтры...</p>
+        </div>
+    `;
+    
+    try {
+        // Получаем все фильтры
+        const weatherFilter = document.getElementById('weatherFilter').value;
+        const tempFilter = document.getElementById('tempFilter').value;
+        const humidityFilter = document.getElementById('humidityFilter').value;
+        const pressureFilter = document.getElementById('pressureFilter').value;
+        const windSpeedFilter = document.getElementById('windSpeedFilter').value;
+        const windDirFilter = document.getElementById('windDirectionFilter').value;
+        const moonFilter = document.getElementById('moonFilter').value;
+        
+        // Проверяем - выбраны ли вообще фильтры?
+        const anyFilters = weatherFilter || tempFilter || humidityFilter || 
+                          pressureFilter || windSpeedFilter || windDirFilter || moonFilter;
+        
+        if (!anyFilters) {
+            // Если фильтры НЕ выбраны - показываем обычный прогноз
+            console.log("⚠️ Фильтры не выбраны, показываем обычный прогноз");
+            await loadFelixPilaPrediction();
+            return;
+        }
+        
+        // Если фильтры выбраны - делаем запрос с ними
+        const params = new URLSearchParams();
+        if (weatherFilter) params.append('weather', weatherFilter);
+        if (tempFilter) params.append('temp', tempFilter);
+        if (humidityFilter) params.append('humidity', humidityFilter);
+        if (pressureFilter) params.append('pressure', pressureFilter);
+        if (windSpeedFilter) params.append('wind_speed', windSpeedFilter);
+        if (windDirFilter) params.append('wind_dir', windDirFilter);
+        if (moonFilter) params.append('moon', moonFilter);
+        
+        console.log(`🔍 Запрос с фильтрами: ${params.toString()}`);
+        
+        // Параллельно запрашиваем прогноз и анализ
+        const [predictionResponse, analysisResponse] = await Promise.all([
+            fetch(`/api/felix-pila/predict?${params}`),
+            fetch(`/api/felix-pila/analysis?${params}`)
+        ]);
+        
+        const predictionData = await predictionResponse.json();
+        const analysisData = await analysisResponse.json();
+        
+        console.log("📊 Ответ с фильтрами:", predictionData);
+        
+        // Обрабатываем прогноз
+        if (!predictionData.has_data || !predictionData.prediction) {
+            displayPrediction(null, true, true);
+            
+            // ОБНОВЛЯЕМ ТОЧНОСТЬ С ЗАДЕРЖКОЙ
+            setTimeout(() => {
+                const accuracyScoreEl = document.getElementById('accuracyScore');
+                const accuracyTextEl = document.getElementById('accuracyText');
+                
+                if (accuracyScoreEl) {
+                    accuracyScoreEl.textContent = '0%';
+                }
+                if (accuracyTextEl) {
+                    accuracyTextEl.textContent = 'Точность: нет данных';
+                }
+            }, 100);
+            
+        } else {
+            displayPrediction(predictionData.prediction);
+            
+            // ОБНОВЛЯЕМ ТОЧНОСТЬ С ЗАДЕРЖКОЙ
+            setTimeout(() => {
+                const accuracyScoreEl = document.getElementById('accuracyScore');
+                const accuracyTextEl = document.getElementById('accuracyText');
+                
+                if (accuracyScoreEl) {
+                    accuracyScoreEl.textContent = Math.round(predictionData.confidence * 100) + '%';
+                }
+                if (accuracyTextEl) {
+                    accuracyTextEl.textContent = `Точность: ${Math.round(predictionData.confidence * 100)}%`;
+                }
+            }, 100);
+        }
+        
+        // Обрабатываем инсайты
+        if (analysisData.has_data && analysisData.analysis) {
+            const insights = analysisData.analysis;
+            
+            if (insights.by_humidity?.high?.field_1) {
+                document.getElementById('highHumidityNumbers').innerHTML = 
+                    renderNumbers(insights.by_humidity.high.field_1);
+            }
+            
+            if (insights.by_pressure?.high?.field_1) {
+                document.getElementById('highPressureNumbers').innerHTML = 
+                    renderNumbers(insights.by_pressure.high.field_1);
+            }
+            
+            // Обновляем бейдж
+            const badge = document.querySelector('.felix-info-badge');
+            if (badge && analysisData.filtered_count) {
+                badge.innerHTML = `
+                    <i class="fas fa-filter"></i>
+                    Проанализировано ${analysisData.filtered_count} записей
+                `;
+            }
+        } else {
+            document.getElementById('highHumidityNumbers').innerHTML = 
+                '<span style="color: #718096;">Нет данных</span>';
+            document.getElementById('highPressureNumbers').innerHTML = 
+                '<span style="color: #718096;">Нет данных</span>';
+        }
+        
+        // Обновляем график
+        showDemoChart();
+        
+    } catch (error) {
+        console.error('Ошибка анализа с фильтрами:', error);
+        // При ошибке возвращаем обычный прогноз
+        await loadFelixPilaPrediction();
+    }
+}
+
+/**
+ * ФУНКЦИЯ СОЗДАНИЯ ДЕМО-ГРАФИКА
+ */
 function showDemoChart() {
     const ctx = document.getElementById('analysisChart').getContext('2d');
     
@@ -933,47 +1462,81 @@ function showDemoChart() {
     });
 }
 
-// 6. ОБНОВЛЕНИЕ ВСЕХ ДАННЫХ
+// БЛОК 7: ФУНКЦИИ УПРАВЛЕНИЯ И ОБНОВЛЕНИЯ
+/**
+ * ФУНКЦИЯ ОБНОВЛЕНИЯ ВСЕХ ДАННЫХ
+ */
 async function refreshAllData() {
     console.log("🔄 Обновление всех данных...");
     
-    // Показываем индикатор загрузки
-    document.getElementById('accuracyText').textContent = 'Обновление...';
-    document.getElementById('accuracyDot').className = 'status-dot demo';
+    // Показываем загрузку только в прогнозе
+    document.getElementById('weatherPrediction').innerHTML = `
+        <div class="loading-state" style="grid-column: span 2;">
+            <div class="loading-spinner"></div>
+            <p>Обновление данных...</p>
+        </div>
+    `;
     
-    // Проверяем источники
-    await checkDataSources();
-    
-    // Загружаем прогноз
+    // ТОЛЬКО прогноз
     await loadFelixPilaPrediction();
     
-    // Загружаем инсайты
-    await loadInsights();
+    // Инсайты в фоне
+    loadInsights().catch(e => console.log("Ошибка инсайтов:", e));
     
-    // Загружаем анализ
-    await loadAnalysis();
-    
-    console.log("✅ Все данные обновлены");
+    console.log("✅ Данные обновлены");
 }
 
-// 7. ИНИЦИАЛИЗАЦИЯ ВСЕГО ПРИ ЗАГРУЗКЕ
+/**
+ * ФУНКЦИЯ СБРОСА ФИЛЬТРОВ
+ */
+function resetFelixFilters() {
+    console.log("🔄 Сброс фильтров");
+    document.getElementById('weatherFilter').value = '';
+    document.getElementById('tempFilter').value = '';
+    document.getElementById('humidityFilter').value = '';
+    document.getElementById('pressureFilter').value = '';
+    document.getElementById('windSpeedFilter').value = '';
+    document.getElementById('windDirectionFilter').value = '';
+    document.getElementById('moonFilter').value = '';
+    
+    // Показываем обычный прогноз
+    loadFelixPilaPrediction();
+}
+
+// БЛОК 8: ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ СТРАНИЦЫ
 document.addEventListener('DOMContentLoaded', async function() {
-    // Сначала проверяем источники данных
+    console.log("🚀 Инициализация Felix Pila");
+    
+    // 1. Загрузка типов погоды ПЕРВЫМ ДЕЛОМ
+    await loadWeatherTypes();
+    
+    // 2. Проверка источников данных
     await checkDataSources();
     
-    // Затем загружаем данные
+    // 3. Основной прогноз
     await loadFelixPilaPrediction();
-    await loadInsights();
-    await loadAnalysis();
     
-    // Добавляем функции для кнопок
-    window.resetFelixFilters = function() {
-        document.getElementById('weatherFilter').value = '';
-        document.getElementById('tempFilter').value = '';
-        loadAnalysis();
+    // 4. Инсайты в фоне
+    setTimeout(() => {
+        loadInsights().catch(e => console.log("Инсайты:", e));
+    }, 1000);
+    
+    // 5. Делаем функции глобальными
+    window.resetFelixFilters = resetFelixFilters;
+    window.refreshAllData = async function() {
+        console.log("🔄 Обновление всех данных");
+        // Обновляем типы погоды и прогноз
+        await loadWeatherTypes();
+        await loadFelixPilaPrediction();
+        setTimeout(() => {
+            loadInsights().catch(e => console.log("Инсайты:", e));
+        }, 500);
     };
     
-    window.refreshAllData = refreshAllData;
+    // Только для кнопки!
+    window.applyAnalysis = loadAnalysisWithFilters;
+    
+    console.log("✅ Инициализация завершена");
 });
 
 // === КОНЕЦ JavaScript КОДА ===

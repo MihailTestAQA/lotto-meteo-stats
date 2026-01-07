@@ -462,32 +462,13 @@
                         </div>
                     </div>
                 </div>
-                
-                <div class="admin-section">
-                    <h3><i class="fas fa-chart-line"></i> Статистика Felix Pila</h3>
-                    <p>Продвинутый анализ связи погоды и чисел</p>
-                    <div class="stats-mini">
-                        <p><i class="fas fa-ticket-alt"></i> Лотерея: <span id="lotteryCount">0</span> тиражей</p>
-                        <p><i class="fas fa-cloud"></i> Погода: <span id="weatherCount">0</span> записей</p>
-                    </div>
-                    <a href="{{ url_for('predictions_page') }}" class="admin-btn">
-                        <i class="fas fa-crystal-ball"></i> Перейти к Felix Pila
-                    </a>
-                </div>
-                
-                <div class="admin-logs">
-                    <h3><i class="fas fa-clipboard-list"></i> Логи системы</h3>
-                    <div id="logsContainer" class="logs-container">
-                        <div class="log-entry">Система запущена...</div>
-                    </div>
-                </div>
             </div>
         </main>
 
         <!-- ФУТЕР (ЕДИНЫЙ ДЛЯ ВСЕХ СТРАНИЦ) -->
         <footer class="main-footer">
             <p>&copy; 2025 LottoMeteoStats. Проект для анализа лотерейных данных</p>
-            <p class="version">Версия: {{ version if version else '1.2.1' }} | Панель управления</p>
+            <p class="version">Версия: {{ version }} | Панель управления</p>
         </footer>
     </div>
 
@@ -513,23 +494,23 @@
             if (result.success) {
                 alert(`✅ ${result.message}`);
                 document.getElementById('lastUpdate').textContent = new Date().toLocaleString();
-                addLog('Парсер запущен успешно');
+                //addLog('Парсер запущен успешно');
                 setTimeout(refreshDatabase, 2000);
             } else {
                 alert(`❌ Ошибка: ${result.message || 'Неизвестная ошибка'}`);
-                addLog(`Ошибка парсера: ${result.message}`);
+                //addLog(`Ошибка парсера: ${result.message}`);
             }
         } catch (error) {
             console.error('Ошибка при запуске парсера:', error);
             alert('❌ Ошибка соединения с сервером');
-            addLog('Ошибка соединения с сервером');
+            //addLog('Ошибка соединения с сервером');
         } finally {
             button.innerHTML = originalText;
             button.disabled = false;
         }
     }
     
-    async function refreshDatabase() {
+    async function refreshDatabase(event = null) {
         const button = event ? event.target : document.querySelector('.btn-warning');
         if (button) {
             const originalText = button.innerHTML;
@@ -550,13 +531,13 @@
                 document.getElementById('dbRecords').textContent = result.total;
                 document.getElementById('dbStatus').textContent = 'Активна';
                 document.getElementById('dbStatus').className = 'status-active';
-                document.getElementById('lotteryCount').textContent = result.total;
-                addLog(`Данные БД обновлены. Записей: ${result.total}`);
+                //document.getElementById('lotteryCount').textContent = result.total;
+                //addLog(`Данные БД обновлены. Записей: ${result.total}`);
                 console.log(`✅ Данные БД обновлены. Записей: ${result.total}`);
             } else {
                 document.getElementById('dbStatus').textContent = 'Ошибка';
                 document.getElementById('dbStatus').className = 'status-error';
-                addLog(`Ошибка БД: ${result.message}`);
+                //addLog(`Ошибка БД: ${result.message}`);
                 alert(`❌ ${result.message}`);
             }
             
@@ -564,7 +545,7 @@
             console.error('Ошибка обновления БД:', error);
             document.getElementById('dbStatus').textContent = 'Ошибка подключения';
             document.getElementById('dbStatus').className = 'status-error';
-            addLog('Ошибка подключения к БД');
+            //addLog('Ошибка подключения к БД');
             alert('❌ Ошибка подключения к БД');
         } finally {
             if (button) {
@@ -589,33 +570,33 @@
                 statusEl.textContent = `Активна (${result.records} записей)`;
                 statusEl.className = 'status-active';
                 document.getElementById('dbRecords').textContent = result.records;
-                addLog('Проверка БД: успешно');
+                //addLog('Проверка БД: успешно');
             } else {
                 statusEl.textContent = 'Проблемы с БД';
                 statusEl.className = 'status-error';
-                addLog('Проверка БД: проблемы обнаружены');
+                //addLog('Проверка БД: проблемы обнаружены');
             }
             
         } catch (error) {
             console.error('Ошибка проверки БД:', error);
             document.getElementById('dbStatus').textContent = 'Ошибка проверки';
             document.getElementById('dbStatus').className = 'status-error';
-            addLog('Ошибка проверки БД');
+            //addLog('Ошибка проверки БД');
             alert('❌ Ошибка проверки БД');
         }
     }
     
-    function addLog(message) {
-        const logsContainer = document.getElementById('logsContainer');
-        const logEntry = document.createElement('div');
-        logEntry.className = 'log-entry';
-        logEntry.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${message}`;
-        logsContainer.prepend(logEntry);
+   // function addLog(message) {
+        //const logsContainer = document.getElementById('logsContainer');
+        //const logEntry = document.createElement('div');
+        //logEntry.className = 'log-entry';
+        //logEntry.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${message}`;
+        //logsContainer.prepend(logEntry);
         
-        if (logsContainer.children.length > 20) {
-            logsContainer.removeChild(logsContainer.lastChild);
-        }
-    }
+        //if (logsContainer.children.length > 20) {
+           // logsContainer.removeChild(logsContainer.lastChild);
+       // }
+   // }
     
     document.addEventListener('DOMContentLoaded', () => {
         addLog('Страница админ-панели загружена');
@@ -625,14 +606,14 @@
             .then(r => r.json())
             .then(data => {
                 if(data.success) {
-                    document.getElementById('lotteryCount').textContent = data.total || 0;
+                    //document.getElementById('lotteryCount').textContent = data.total || 0;
                     document.getElementById('dbRecords').textContent = data.total || 0;
                     document.getElementById('lastUpdate').textContent = 
                         new Date(data.last_update).toLocaleString('ru-RU');
                 }
             })
             .catch(error => {
-                addLog('Ошибка загрузки статистики');
+                //addLog('Ошибка загрузки статистики');
             });
     });
     </script>

@@ -41,86 +41,87 @@ class LotteryResult(db.Model):
     def __repr__(self):
         return f'<LotteryResult {self.draw_number}>'
 
-# Маршруты приложения
-@app.route('/')
-def index():
-    # Главная страница
+
+# ==================== ОСНОВНЫЕ ФУНКЦИИ ЛОТЕРЕИ ====================
+
+@app.route('/api/lottery/data')
+def get_lottery_data():
+    #API для получения всех лотерейных данных
     try:
-        # Подключаемся напрямую к БД lottery.db в папке data
         import sqlite3
         import os
+        import json
         
-        # Формируем правильный путь
-        basedir = os.path.abspath(os.path.dirname(__file__))
-        db_path = os.path.join(basedir, 'data', 'lottery.db')
+        db_path = r'D:\VS_code\lotto-meteo-stats\data\lottery.db'
         
-        print(f"🔍 Ищу БД по пути: {db_path}")  # Для отл#адки
-        
-        # Проверяем существует ли файл
         if not os.path.exists(db_path):
-            print(f"❌ Файл БД не найден: {db_path}")
-            total_records = 0
-        else:
-            conn = sqlite3.connect(db_path)
-            cursor = conn.cursor()
+            return jsonify({'success': False, 'message': 'БД не найдена', 'data': []})
+        
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        print(f"📊 Получаем ВСЕ данные из БД: {db_path}")
+        
+        cursor.execute("""
+            SELECT draw_number, date, time, field_1, field_2, 
+                   temperature, weather, pressure, created_at 
+            FROM lottery_results 
+            ORDER BY 
+                CASE 
+                    WHEN date != '' THEN date 
+                    ELSE '01.01.1900' 
+                END DESC,
+                time DESC,
+                draw_number DESC
+             --  LIMIT 1000  <- раскомментируй если хочешь ограничение
+        """)
+        
+        data = []
+        rows = cursor.fetchall()
+        print(f"📈 Найдено записей в БД: {len(rows)}")
+        
+        for row in rows:
+            draw_number, date, time, field_1, field_2, temp, weather, pressure, created_at = row
             
-            # Считаем записи в таблице lottery_results
-            cursor.execute("SELECT COUNT(*) FROM lottery_results")
-            total_records = cursor.fetchone()[0]
+            # Преобразуем JSON
+            try:
+                field1_list = json.loads(field_1) if field_1 else []
+            except:
+                field1_list = []
+                
+            try:
+                field2_list = json.loads(field_2) if field_2 else []
+            except:
+                field2_list = []
             
-            conn.close()
-            
+            data.append({
+                'tirage': draw_number,
+                'date': date if date else '',
+                'time': time if time else '',
+                'field_1': field1_list,
+                'field_2': field2_list,
+                'created_at': created_at,
+                'temperature': temp,
+                'weather': weather if weather else '',
+                'pressure': pressure,
+                'added_at': created_at
+            })
+        
+        conn.close()
+        
+        print(f"✅ Отправлено записей: {len(data)}")
+        
+        return jsonify({
+            'success': True,
+            'data': data,
+            'total': len(data),
+            'source': 'database',
+            'last_update': datetime.now().isoformat()
+        })
+        
     except Exception as e:
-        print(f"Ошибка при подсчете записей: {e}")
-        total_records = 0
-    
-    stats = {
-        'project_name': 'LottoMeteoStats',
-        'current_date': datetime.now().strftime("%d.%m.%Y %H:%M"),
-        'version': app_version,
-        'total_records': total_records,
-        'features': [
-            'Анализ лотерейных данных',
-            'Интеграция с погодными API',
-            'Статистика выпадения номеров',
-            'Визуализация результатов'
-        ]
-    }
-    return render_template('index.html', **stats)
-
-@app.route('/lottery')
-def lottery_page():
-    # Страница с лотерейными данными
-    return render_template('lottery.html', version=app_version)
-
-@app.route('/weather')
-def weather_page():
-     # Страница с погодными данными
-    return render_template('weather.html', version=app_version)
-
-@app.route('/admin')
-def admin_panel():
-    # Панель администратора
-    return render_template('admin.html', version=app_version)
-
-# Добавь после других роутов
-
-@app.route('/statistics')
-def statistics_page():
-     # Страница статистики
-    return render_template('statistics.html', version=app_version)
-
-@app.route('/predictions')
-def predictions_page():
-     # Страница Felix Pila с предсказаниями
-    current_date = datetime.now().strftime("%d.%m.%Y")
-    return render_template('felix_pila.html', 
-                          current_date=current_date,
-                          version=app_version)
-@app.route('/graphs')
-def graphs_page():
-    # Страница графиков
-    return render_template('graphs.html')
+        print(f"❌ Ошибка в get_lottery_data: {e}")
+        return jsonify({'success': False, 'message': str(e), 'data': []})
 
 @app.route('/api/lottery/statistics')
 def get_statistics():
@@ -316,160 +317,59 @@ def get_predictions():
         }
     })
 
-# API endpoints
-@app.route('/api/health')
-def health_check():
-    # Проверка работоспособности
+@app.route('/api/run-parser', methods=['POST'])
+def run_parser_api():
+    #API для запуска парсера
     try:
-        import sqlite3
-        import os
+        print("🔄 API: Запуск парсера...")
         
-        # Тот же путь что везде
-        basedir = os.path.abspath(os.path.dirname(__file__))
-        db_path = os.path.join(basedir, 'data', 'lottery.db')
-        
-        print(f"🔍 health_check ищет БД: {db_path}")
-        
-        if not os.path.exists(db_path):
-            return jsonify({
-                'status': 'healthy',
-                'timestamp': datetime.now().isoformat(),
-                'message': 'Сайт работает (файл БД не найден)',
-                'database': 'file not found',
-                'records': 0
-            })
-        
-        # Подключаемся и считаем
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        
+        # Импортируем парсер
         try:
-            # Проверяем есть ли таблица
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='lottery_results'")
-            table_exists = cursor.fetchone() is not None
-            
-            if not table_exists:
-                conn.close()
-                return jsonify({
-                    'status': 'healthy',
-                    'timestamp': datetime.now().isoformat(),
-                    'message': 'Сайт работает (таблица не найдена)',
-                    'database': 'table not found',
-                    'records': 0
-                })
-            
-            # Считаем записи
-            cursor.execute("SELECT COUNT(*) FROM lottery_results")
-            record_count = cursor.fetchone()[0]
-            
-            conn.close()
-            
+            # Пробуем импорт из новой структуры
+            from src.parsers.lottery_parser import run_parser_sync
+        except ImportError:
+            try:
+                # Пробуем старый путь
+                from parsers.lottery_parser import run_parser_sync
+            except ImportError:
+                try:
+                    # Пробуем прямой импорт
+                    from lottery_parser import run_parser_sync
+                except ImportError:
+                    return jsonify({
+                        'success': False,
+                        'message': 'Парсер не найден'
+                    }), 404
+        
+        # Запускаем парсер
+        saved_count = run_parser_sync()
+        
+        if saved_count > 0:
             return jsonify({
-                'status': 'healthy',
-                'timestamp': datetime.now().isoformat(),
-                'message': 'Сайт работает',
-                'database': f'connected ({record_count} записей)',
-                'records': record_count,
-                'db_file': db_path
+                'success': True,
+                'message': f'Парсер успешно выполнен. Сохранено {saved_count} новых записей',
+                'saved_count': saved_count,
+                'timestamp': datetime.now().isoformat()
             })
-            
-        except Exception as db_error:
-            conn.close()
+        else:
             return jsonify({
-                'status': 'healthy',
-                'timestamp': datetime.now().isoformat(),
-                'message': f'Сайт работает (ошибка БД)',
-                'database': f'error: {str(db_error)[:50]}',
-                'records': 0
+                'success': True,
+                'message': 'Парсер выполнен, но новых данных не найдено',
+                'saved_count': 0,
+                'timestamp': datetime.now().isoformat()
             })
             
     except Exception as e:
+        print(f"❌ Ошибка при запуске парсера: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({
-            'status': 'healthy',
-            'timestamp': datetime.now().isoformat(),
-            'message': 'Сайт работает (ошибка проверки)',
-            'database': f'error: {str(e)[:50]}',
-            'records': 0
-        })
+            'success': False,
+            'message': f'Ошибка: {str(e)}'
+        }), 500
 
-@app.route('/api/lottery/data')
-def get_lottery_data():
-    #API для получения всех лотерейных данных
-    try:
-        import sqlite3
-        import os
-        import json
-        
-        db_path = r'D:\VS_code\lotto-meteo-stats\data\lottery.db'
-        
-        if not os.path.exists(db_path):
-            return jsonify({'success': False, 'message': 'БД не найдена', 'data': []})
-        
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        
-        print(f"📊 Получаем ВСЕ данные из БД: {db_path}")
-        
-        cursor.execute("""
-            SELECT draw_number, date, time, field_1, field_2, 
-                   temperature, weather, pressure, created_at 
-            FROM lottery_results 
-            ORDER BY 
-                CASE 
-                    WHEN date != '' THEN date 
-                    ELSE '01.01.1900' 
-                END DESC,
-                time DESC,
-                draw_number DESC
-             --  LIMIT 1000  <- раскомментируй если хочешь ограничение
-        """)
-        
-        data = []
-        rows = cursor.fetchall()
-        print(f"📈 Найдено записей в БД: {len(rows)}")
-        
-        for row in rows:
-            draw_number, date, time, field_1, field_2, temp, weather, pressure, created_at = row
-            
-            # Преобразуем JSON
-            try:
-                field1_list = json.loads(field_1) if field_1 else []
-            except:
-                field1_list = []
-                
-            try:
-                field2_list = json.loads(field_2) if field_2 else []
-            except:
-                field2_list = []
-            
-            data.append({
-                'tirage': draw_number,
-                'date': date if date else '',
-                'time': time if time else '',
-                'field_1': field1_list,
-                'field_2': field2_list,
-                'created_at': created_at,
-                'temperature': temp,
-                'weather': weather if weather else '',
-                'pressure': pressure,
-                'added_at': created_at
-            })
-        
-        conn.close()
-        
-        print(f"✅ Отправлено записей: {len(data)}")
-        
-        return jsonify({
-            'success': True,
-            'data': data,
-            'total': len(data),
-            'source': 'database',
-            'last_update': datetime.now().isoformat()
-        })
-        
-    except Exception as e:
-        print(f"❌ Ошибка в get_lottery_data: {e}")
-        return jsonify({'success': False, 'message': str(e), 'data': []})
+
+# ==================== ФУНКЦИИ ПОГОДЫ ====================
 
 @app.route('/api/weather/current')
 def get_current_weather():
@@ -480,16 +380,32 @@ def get_current_weather():
         weather = parser.get_current_weather()
         
         if weather:
-            # Сохраняем в БД и привязываем к тиражам
-            parser.save_weather_to_db(weather)
-            parser.update_latest_weather_to_lottery(weather)  # ← ДОБАВЬ ЭТУ СТРОКУ!
+            # 1. ПРОВЕРКА НА ДЕМО-ДАННЫЕ ПЕРЕД СОХРАНЕНИЕМ
+            is_demo = (
+                weather.get('is_demo') or 
+                weather.get('temperature') == 0 or 
+                weather.get('pressure_mmhg') == 0 or
+                weather.get('city', '').lower() in ['демо', 'demo', 'тест', 'test']
+            )
             
-            print(f"🔗 Погода привязана к тиражам")
+            if not is_demo:
+                # Сохраняем в БД только если НЕ демо
+                saved = parser.save_weather_to_db(weather)
+                if saved:
+                    parser.update_latest_weather_to_lottery(weather)
+                    print(f"🔗 Погода привязана к тиражам")
+                else:
+                    print(f"⚠️ Погода не сохранена (демо или ошибка)")
+            else:
+                print(f"⚠️ Получены демо-данные, пропускаем сохранение")
             
+            # 2. ВСЕГДА возвращаем данные (даже демо) для отображения
             return jsonify({
                 'success': True,
                 'data': weather,
-                'message': 'Погодные данные получены'
+                'saved_to_db': not is_demo,  # флаг сохранено ли в БД
+                'is_demo_data': is_demo,     # флаг демо-данных
+                'message': 'Погодные данные получены' + (' (демо)' if is_demo else '')
             })
         else:
             return jsonify({
@@ -499,10 +415,24 @@ def get_current_weather():
             
     except Exception as e:
         print(f"❌ Ошибка API погоды: {e}")
+        # Возвращаем демо-данные при ошибке
+        demo_weather = {
+            'temperature': 0.0,
+            'pressure_mmhg': 0,
+            'humidity': 0,
+            'weather_description': 'ошибка получения данных',
+            'city': 'Демо',
+            'is_demo': True,
+            'note': 'Временные данные из-за ошибки API'
+        }
+        
         return jsonify({
-            'success': False,
-            'message': f'Ошибка: {str(e)}'
-        }), 500
+            'success': True,  # все равно success чтобы фронт не сломался
+            'data': demo_weather,
+            'saved_to_db': False,
+            'is_demo_data': True,
+            'message': f'Ошибка API, показаны демо-данные: {str(e)[:50]}'
+        })
 
 @app.route('/api/weather/history')
 def get_weather_history():
@@ -625,115 +555,562 @@ def test_weather_api():
             'traceback': traceback.format_exc()
         })
 
-# Функции для парсинга
-@app.route('/api/run-parser', methods=['POST'])
-def run_parser_api():
-    #API для запуска парсера
+@app.route('/api/weather/types')
+def get_weather_types():
+    """Получить все уникальные типы погоды из БД"""
     try:
-        print("🔄 API: Запуск парсера...")
+        import sqlite3
+        import os
         
-        # Импортируем парсер
-        try:
-            # Пробуем импорт из новой структуры
-            from src.parsers.lottery_parser import run_parser_sync
-        except ImportError:
-            try:
-                # Пробуем старый путь
-                from parsers.lottery_parser import run_parser_sync
-            except ImportError:
-                try:
-                    # Пробуем прямой импорт
-                    from lottery_parser import run_parser_sync
-                except ImportError:
-                    return jsonify({
-                        'success': False,
-                        'message': 'Парсер не найден'
-                    }), 404
+        db_path = r'D:\VS_code\lotto-meteo-stats\data\lottery.db'
         
-        # Запускаем парсер
-        saved_count = run_parser_sync()
+        if not os.path.exists(db_path):
+            return jsonify({'success': False, 'types': []})
         
-        if saved_count > 0:
-            return jsonify({
-                'success': True,
-                'message': f'Парсер успешно выполнен. Сохранено {saved_count} новых записей',
-                'saved_count': saved_count,
-                'timestamp': datetime.now().isoformat()
-            })
-        else:
-            return jsonify({
-                'success': True,
-                'message': 'Парсер выполнен, но новых данных не найдено',
-                'saved_count': 0,
-                'timestamp': datetime.now().isoformat()
-            })
-            
-    except Exception as e:
-        print(f"❌ Ошибка при запуске парсера: {e}")
-        import traceback
-        traceback.print_exc()
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        # Получаем уникальные типы погоды и сколько тиражей для каждого
+        cursor.execute("""
+            SELECT 
+                wh.weather_description,
+                COUNT(DISTINCT lr.draw_number) as draw_count
+            FROM weather_history wh
+            LEFT JOIN lottery_results lr ON 
+                DATE(wh.timestamp) = (
+                    '2026-01-' || 
+                    CASE 
+                        WHEN INSTR(lr.date, '.') = 2 THEN '0' || SUBSTR(lr.date, 1, 1)
+                        ELSE SUBSTR(lr.date, 1, 2)
+                    END
+                )
+            WHERE wh.weather_description IS NOT NULL 
+                AND wh.weather_description != ''
+            GROUP BY wh.weather_description
+            ORDER BY draw_count DESC, wh.weather_description
+        """)
+        
+        types = [{'type': row[0], 'count': row[1]} for row in cursor.fetchall()]
+        conn.close()
+        
         return jsonify({
-            'success': False,
-            'message': f'Ошибка: {str(e)}'
-        }), 500
+            'success': True,
+            'types': types,
+            'count': len(types)
+        })
+        
+    except Exception as e:
+        print(f"❌ Ошибка в get_weather_types: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+
+# ==================== FELIX PILA ФУНКЦИИ ====================
 
 @app.route('/api/felix-pila/analysis')
 def get_felix_pila_analysis():
-    # API для анализа связи погоды и чисел
+    """Анализ с фильтрами"""
     try:
-        # Получаем данные из обеих таблиц
-        lottery_data = get_lottery_data()
-        weather_data = get_weather_data()
+        import sqlite3
+        import os
+        import json
+        from collections import Counter
         
-        # Анализ: какие числа выпадают при какой погоде
-        analysis = {
+        # Простые фильтры
+        weather_filter = request.args.get('weather', '').lower()
+        
+        db_path = r'D:\VS_code\lotto-meteo-stats\data\lottery.db'
+        
+        if not os.path.exists(db_path):
+            return jsonify(generate_demo_analysis())
+        
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        # Простой запрос
+        cursor.execute("""
+            SELECT field_1, field_2, temperature, weather 
+            FROM lottery_results 
+            WHERE temperature IS NOT NULL AND weather IS NOT NULL
+            LIMIT 100
+        """)
+        
+        rows = cursor.fetchall()
+        conn.close()
+        
+        if len(rows) < 10:
+            return jsonify(generate_demo_analysis())
+        
+        # Применяем фильтры
+        filtered_rows = []
+        for field1_json, field2_json, temp, weather in rows:
+            matches = True
+            
+            if weather_filter and weather:
+                if weather_filter not in str(weather).lower():
+                    matches = False
+            
+            if matches:
+                filtered_rows.append((field1_json, field2_json, temp, weather))
+        
+        print(f"📊 Для анализа: {len(filtered_rows)} записей")
+        
+        # Анализ
+        high_humidity_field1 = []
+        high_pressure_field1 = []
+        
+        # Простой анализ - всегда возвращаем что-то
+        for field1_json, field2_json, temp, weather in filtered_rows[:20]:  # Берем первые 20
+            if field1_json:
+                try:
+                    numbers = json.loads(field1_json)
+                    high_humidity_field1.extend(numbers)  # Показываем все числа
+                    high_pressure_field1.extend(numbers)
+                except:
+                    pass
+        
+        # Берем топ-5 частых чисел
+        def get_top_5(numbers_list):
+            if not numbers_list:
+                return [random.randint(1, 20) for _ in range(5)]
+            counter = Counter(numbers_list)
+            return [num for num, _ in counter.most_common(5)]
+        
+        return jsonify({
             "success": True,
+            "has_data": True,
+            "filtered_count": len(filtered_rows),
             "analysis": {
-                "by_temperature": analyze_by_temperature(lottery_data, weather_data),
-                "by_pressure": analyze_by_pressure(lottery_data, weather_data),
-                "by_humidity": analyze_by_humidity(lottery_data, weather_data),
-                "by_weather_type": analyze_by_weather_type(lottery_data, weather_data),
-                "top_weather_combinations": get_top_weather_combinations(lottery_data, weather_data)
+                "by_humidity": {
+                    "high": {
+                        "field_1": get_top_5(high_humidity_field1),
+                        "field_2": get_top_5([])
+                    }
+                },
+                "by_pressure": {
+                    "high": {
+                        "field_1": get_top_5(high_pressure_field1),
+                        "field_2": get_top_5([])
+                    }
+                },
+                "stats": {
+                    "total_records": len(filtered_rows)
+                }
             }
-        }
-        return jsonify(analysis)
+        })
+        
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
+        print(f"❌ Ошибка анализа: {e}")
+        return jsonify(generate_demo_analysis())
 
 @app.route('/api/felix-pila/predict')
 def get_felix_pila_predict():
-    # API для прогноза на основе текущей погоды
+    """Прогноз с РЕАЛЬНЫМИ фильтрами через SQL JOIN"""
     try:
-        # Получаем текущую погоду
-        current_weather = get_current_weather()
+        import sqlite3
+        import os
+        import json
+        import random
+        from collections import Counter
         
-        # Получаем исторические данные
-        lottery_data = get_lottery_data()
-        weather_data = get_weather_data()
+        # Получаем фильтры
+        weather_filter = request.args.get('weather', '').lower()
+        temp_filter = request.args.get('temp', '')
+        humidity_filter = request.args.get('humidity', '')
+        pressure_filter = request.args.get('pressure', '')
+        wind_speed_filter = request.args.get('wind_speed', '')
+        wind_dir_filter = request.args.get('wind_dir', '')
         
-        # Прогноз: какие числа вероятнее выпадут сегодня
-        prediction = predict_numbers(current_weather, lottery_data, weather_data)
+        db_path = r'D:\VS_code\lotto-meteo-stats\data\lottery.db'
         
+        if not os.path.exists(db_path):
+            return get_no_data_response(0, "БД не найдена")
+        
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        # Подзапрос с агрегацией
+        sql = """
+            SELECT *
+            FROM (
+                SELECT 
+                    lr.field_1, 
+                    lr.field_2,
+                    ROUND(AVG(wh.temperature)) as temperature,
+                    wh.weather_description,
+                    ROUND(AVG(wh.humidity)) as humidity,
+                    ROUND(AVG(wh.pressure_mmhg)) as pressure_mmhg,
+                    ROUND(AVG(wh.wind_speed)) as wind_speed,
+                    wh.wind_direction,
+                    lr.draw_number,
+                    lr.date
+                FROM lottery_results lr
+                INNER JOIN weather_history wh ON 
+                    DATE(wh.timestamp) = (
+                        '2026-01-' || 
+                        CASE 
+                            WHEN INSTR(lr.date, '.') = 2 THEN '0' || SUBSTR(lr.date, 1, 1)
+                            ELSE SUBSTR(lr.date, 1, 2)
+                        END
+                    )
+                -- Группируем и по погоде тоже!
+                GROUP BY lr.draw_number, lr.date, wh.weather_description
+            ) as aggregated
+            WHERE 1=1
+        """
+        
+        # ИНИЦИАЛИЗИРУЕМ params ПЕРЕД использованием
+        params = []
+        
+        # Фильтры по вычисленным полям
+        if weather_filter:
+            # Простой LIKE - данные уже в нижнем регистре
+            sql += " AND aggregated.weather_description LIKE ?"
+            params.append(f"%{weather_filter}%")
+        
+        if temp_filter and '_' in temp_filter:
+            try:
+                min_temp, max_temp = temp_filter.split('_')
+                sql += " AND aggregated.temperature BETWEEN ? AND ?"
+                params.extend([int(min_temp), int(max_temp)])
+            except:
+                pass
+        
+        if humidity_filter and '_' in humidity_filter:
+            try:
+                min_hum, max_hum = humidity_filter.split('_')
+                sql += " AND aggregated.humidity BETWEEN ? AND ?"
+                params.extend([int(min_hum), int(max_hum)])
+            except:
+                pass
+        
+        if pressure_filter and '_' in pressure_filter:
+            try:
+                min_pressure, max_pressure = pressure_filter.split('_')
+                sql += " AND aggregated.pressure_mmhg BETWEEN ? AND ?"
+                params.extend([float(min_pressure), float(max_pressure)])
+                print(f"🌡️ Фильтр давления: {min_pressure}-{max_pressure} мм")
+            except Exception as e:
+                print(f"⚠️ Ошибка фильтра давления: {e}")
+                pass
+        elif pressure_filter:  # для старых значений (если остались где-то)
+            try:
+                pressure_value = int(pressure_filter)
+                sql += " AND aggregated.pressure_mmhg BETWEEN ? AND ?"
+                params.extend([pressure_value - 2, pressure_value + 2])
+            except:
+                pass
+        
+        if wind_speed_filter and '_' in wind_speed_filter:
+            try:
+                min_ws, max_ws = wind_speed_filter.split('_')
+                sql += " AND aggregated.wind_speed BETWEEN ? AND ?"
+                params.extend([float(min_ws), float(max_ws)])
+            except:
+                pass
+        
+        if wind_dir_filter:
+            sql += " AND LOWER(aggregated.wind_direction) LIKE ?"
+            params.append(f"%{wind_dir_filter}%")
+        
+        sql += " ORDER BY aggregated.date DESC, aggregated.draw_number DESC"
+        sql += " LIMIT 100"
+        
+        print(f"🔍 SQL: {sql[:200]}...")
+        print(f"📊 Параметры: {params}")
+        
+        cursor.execute(sql, params)
+        rows = cursor.fetchall()
+        conn.close()
+        
+        print(f"📊 Найдено тиражей: {len(rows)}")
+        
+        if len(rows) < 1:
+            return get_no_data_response(len(rows), f"нет тиражей ({len(rows)} записей)")
+        
+        # Анализируем отфильтрованные данные - ИНИЦИАЛИЗИРУЕМ переменные
+        field1_numbers = []
+        field2_numbers = []
+        
+        for row in rows:
+            field1_json, field2_json = row[0], row[1]
+            
+            if field1_json:
+                try:
+                    numbers1 = json.loads(field1_json)
+                    field1_numbers.extend(numbers1)
+                except:
+                    pass
+            
+            if field2_json:
+                try:
+                    numbers2 = json.loads(field2_json)
+                    field2_numbers.extend(numbers2)
+                except:
+                    pass
+        
+        print(f"📊 Собрано чисел: field1={len(field1_numbers)}, field2={len(field2_numbers)}")
+        
+        # Даже если мало чисел - всё равно пытаемся сделать прогноз
+        if len(field1_numbers) < 4 or len(field2_numbers) < 4:
+            print(f"⚠️ Мало чисел: field1={len(field1_numbers)}, field2={len(field2_numbers)}")
+            # Продолжаем - дополним случайными числами
+        
+        # Генерация прогноза
+        counter1 = Counter(field1_numbers)
+        counter2 = Counter(field2_numbers)
+
+        print(f"📊 Анализ чисел: всего field1={len(field1_numbers)}, уникальных={len(counter1)}")
+        print(f"📊 Top 5 field1: {counter1.most_common(5)}")
+        print(f"📊 Top 5 field2: {counter2.most_common(5)}")
+        
+        # Даже если counter пустой - создаем демо-данные
+        if not counter1:
+            print("ℹ️ counter1 пустой, создаем начальные числа")
+            field1_pred = []
+        else:
+            field1_pred = [num for num, _ in counter1.most_common(4)]
+
+        if not counter2:
+            print("ℹ️ counter2 пустой, создаем начальные числа")
+            field2_pred = []
+        else:
+            field2_pred = [num for num, _ in counter2.most_common(4)]
+
+        print(f"📊 Выбранные числа field1: {field1_pred}")
+        print(f"📊 Выбранные числа field2: {field2_pred}")
+
+        # Дополняем если не хватает
+        all_numbers = list(set(field1_numbers + field2_numbers))
+        
+        while len(field1_pred) < 4:
+            if all_numbers:
+                num = random.choice(all_numbers)
+            else:
+                num = random.randint(1, 20)
+            if num not in field1_pred:
+                field1_pred.append(num)
+
+        while len(field2_pred) < 4:
+            if all_numbers:
+                num = random.choice(all_numbers)
+            else:
+                num = random.randint(1, 20)
+            if num not in field2_pred:
+                field2_pred.append(num)
+
+        # === ИСПРАВЛЕННЫЙ РАСЧЕТ ВЕРОЯТНОСТЕЙ ===
+        print(f"📊 Количество тиражей: {len(rows)}")
+        print(f"📊 Частота чисел field1 в тиражах: { {num: counter1[num] for num in field1_pred} }")
+        print(f"📊 Частота чисел field2 в тиражах: { {num: counter2[num] for num in field2_pred} }")
+
+        # Вероятности на основе частоты в тиражах
+        def add_probs(numbers, counter, total_tirages):
+            result = []
+            for num in numbers:
+                frequency = counter.get(num, 0)  # в скольких тиражах выпало число
+                # Вероятность = (в скольких тиражах выпало / всего тиражей) * 100
+                probability = int((frequency * 100) / max(1, total_tirages))
+                # Ограничиваем диапазон 20-95%
+                probability = min(95, max(20, probability))
+                result.append({
+                    "number": num,
+                    "probability": probability
+                })
+            return result
+
+        total_tirages = len(rows)  # количество тиражей (например 20)
+        field1_probs = add_probs(field1_pred, counter1, total_tirages)
+        field2_probs = add_probs(field2_pred, counter2, total_tirages)
+
+        print(f"📊 Вероятности field1: {field1_probs}")
+        print(f"📊 Вероятности field2: {field2_probs}")
+        # === КОНЕЦ ИСПРАВЛЕННОГО РАСЧЕТА ===
+
+        # Уверенность зависит от количества данных
+        confidence = min(0.9, max(0.3, len(rows) / 10))
+
         return jsonify({
             "success": True,
-            "prediction": prediction,
-            "current_weather": current_weather,
-            "confidence": calculate_confidence(prediction)
+            "has_data": True,
+            "prediction": {
+                "field_1": field1_probs,
+                "field_2": field2_probs
+            },
+            "confidence": round(confidence, 2),
+            "filtered_count": len(rows),
+            "note": f"На основе {len(rows)} тиражей" + (f" (фильтр: {temp_filter})" if temp_filter else "")
         })
+        
     except Exception as e:
-        # Возвращаем демо-данные если API не работает
+        print(f"❌ Ошибка в get_felix_pila_predict: {e}")
+        import traceback
+        traceback.print_exc()
+        return get_no_data_response(0, f"ошибка: {str(e)[:30]}")
+
+
+# ==================== ОСНОВНЫЕ МАРШРУТЫ ====================
+
+@app.route('/')
+def index():
+    # Главная страница
+    try:
+        # Подключаемся напрямую к БД lottery.db в папке data
+        import sqlite3
+        import os
+        
+        # Формируем правильный путь
+        basedir = os.path.abspath(os.path.dirname(__file__))
+        db_path = os.path.join(basedir, 'data', 'lottery.db')
+        
+        print(f"🔍 Ищу БД по пути: {db_path}")  # Для отл#адки
+        
+        # Проверяем существует ли файл
+        if not os.path.exists(db_path):
+            print(f"❌ Файл БД не найден: {db_path}")
+            total_records = 0
+        else:
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            
+            # Считаем записи в таблице lottery_results
+            cursor.execute("SELECT COUNT(*) FROM lottery_results")
+            total_records = cursor.fetchone()[0]
+            
+            conn.close()
+            
+    except Exception as e:
+        print(f"Ошибка при подсчете записей: {e}")
+        total_records = 0
+    
+    stats = {
+        'project_name': 'LottoMeteoStats',
+        'current_date': datetime.now().strftime("%d.%m.%Y %H:%M"),
+        'version': app_version,
+        'total_records': total_records,
+        'features': [
+            'Анализ лотерейных данных',
+            'Интеграция с погодными API',
+            'Статистика выпадения номеров',
+            'Визуализация результатов'
+        ]
+    }
+    return render_template('index.html', **stats)
+
+@app.route('/lottery')
+def lottery_page():
+    # Страница с лотерейными данными
+    return render_template('lottery.html', version=app_version)
+
+@app.route('/weather')
+def weather_page():
+     # Страница с погодными данными
+    return render_template('weather.html', version=app_version)
+
+@app.route('/admin')
+def admin_panel():
+    # Панель администратора
+    return render_template('admin.html', version=app_version)
+
+@app.route('/statistics')
+def statistics_page():
+     # Страница статистики
+    return render_template('statistics.html', version=app_version)
+
+@app.route('/predictions')
+def predictions_page():
+     # Страница Felix Pila с предсказаниями
+    current_date = datetime.now().strftime("%d.%m.%Y")
+    return render_template('felix_pila.html', 
+                          current_date=current_date,
+                          version=app_version)
+
+@app.route('/graphs')
+def graphs_page():
+    # Страница графиков
+    return render_template('graphs.html')
+
+@app.route('/api/health')
+def health_check():
+    # Проверка работоспособности
+    try:
+        import sqlite3
+        import os
+        
+        # Тот же путь что везде
+        basedir = os.path.abspath(os.path.dirname(__file__))
+        db_path = os.path.join(basedir, 'data', 'lottery.db')
+        
+        print(f"🔍 health_check ищет БД: {db_path}")
+        
+        if not os.path.exists(db_path):
+            return jsonify({
+                'status': 'healthy',
+                'timestamp': datetime.now().isoformat(),
+                'message': 'Сайт работает (файл БД не найден)',
+                'database': 'file not found',
+                'records': 0
+            })
+        
+        # Подключаемся и считаем
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        try:
+            # Проверяем есть ли таблица
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='lottery_results'")
+            table_exists = cursor.fetchone() is not None
+            
+            if not table_exists:
+                conn.close()
+                return jsonify({
+                    'status': 'healthy',
+                    'timestamp': datetime.now().isoformat(),
+                    'message': 'Сайт работает (таблица не найдена)',
+                    'database': 'table not found',
+                    'records': 0
+                })
+            
+            # Считаем записи
+            cursor.execute("SELECT COUNT(*) FROM lottery_results")
+            record_count = cursor.fetchone()[0]
+            
+            conn.close()
+            
+            return jsonify({
+                'status': 'healthy',
+                'timestamp': datetime.now().isoformat(),
+                'message': 'Сайт работает',
+                'database': f'connected ({record_count} записей)',
+                'records': record_count,
+                'db_file': db_path
+            })
+            
+        except Exception as db_error:
+            conn.close()
+            return jsonify({
+                'status': 'healthy',
+                'timestamp': datetime.now().isoformat(),
+                'message': f'Сайт работает (ошибка БД)',
+                'database': f'error: {str(db_error)[:50]}',
+                'records': 0
+            })
+            
+    except Exception as e:
         return jsonify({
-            "success": True,
-            "prediction": generate_demo_prediction(),
-            "current_weather": generate_demo_weather(),
-            "confidence": 0.65,
-            "note": "Используются демо-данные"
+            'status': 'healthy',
+            'timestamp': datetime.now().isoformat(),
+            'message': 'Сайт работает (ошибка проверки)',
+            'database': f'error: {str(e)[:50]}',
+            'records': 0
         })
 
 # Контекстный процессор для автоматической передачи версии во все шаблоны
 @app.context_processor
 def inject_version():
     return dict(version=app_version)
+
+
+# ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
 
 def get_lottery_data():
     # Получение данных лотереи Используем существующую функцию
@@ -837,11 +1214,11 @@ def analyze_by_temperature(lottery_data, weather_data):
     }
 
 def analyze_by_pressure(lottery_data, weather_data):
-    # Анализ чисел по давлению
+    # Анализ чисел по давлению----------------------------------------------------------------------
     return {
-        "low_pressure": [6, 10, 13, 17, 19],
-        "normal_pressure": [2, 5, 9, 12, 15],
-        "high_pressure": [1, 4, 8, 11, 16],
+        "low_pressure": [6, 10, 13, 17],
+        "normal_pressure": [2, 5, 9, 12],
+        "high_pressure": [1, 4, 8, 11],
         "correlation": 0.38
     }
 
@@ -873,29 +1250,152 @@ def predict_numbers(current_weather, lottery_data, weather_data):
     }
 
 def generate_demo_prediction():
-    # Генерация демо-прогноза
+    """Генерация демо-прогноза для Felix Pila"""
     import random
-    numbers = random.sample(range(1, 21), 10)
+    numbers = list(range(1, 21))
+    random.shuffle(numbers)
+    
     return {
-        "recommended_numbers": sorted(numbers),
-        "weather_influence": {
-            "temperature_impact": "Высокая",
-            "pressure_impact": "Средняя",
-            "humidity_impact": "Низкая"
+        "field_1": [
+            {"number": numbers[0], "probability": 75},
+            {"number": numbers[1], "probability": 72},
+            {"number": numbers[2], "probability": 68},
+            {"number": numbers[3], "probability": 65}
+        ],
+        "field_2": [
+            {"number": numbers[4], "probability": 78},
+            {"number": numbers[5], "probability": 74},
+            {"number": numbers[6], "probability": 71},
+            {"number": numbers[7], "probability": 67}
+        ]
+    }
+
+def get_simple_demo(reason=""):
+    # Простой демо-ответ с числами 0 чтобы было видно что это тест--------------------------------------------------
+    return jsonify({
+        "success": True,
+        "has_data": False,  # Всегда false для демо
+        "prediction": {
+            "field_1": [
+                {"number": 0, "probability": 0},
+                {"number": 0, "probability": 0},
+                {"number": 0, "probability": 0},
+                {"number": 0, "probability": 0}
+            ],
+            "field_2": [
+                {"number": 0, "probability": 0},
+                {"number": 0, "probability": 0},
+                {"number": 0, "probability": 0},
+                {"number": 0, "probability": 0}
+            ]
         },
-        "prediction_date": datetime.now().strftime("%Y-%m-%d")
+        "confidence": 0,
+        "note": f"ТЕСТОВЫЕ ДАННЫЕ ({reason}) - числа 0",
+        "warning": "⚠️ Это демо-данные, а не реальный прогноз!"
+    })#-------------------------------------------------------------------------------------------------------------------
+
+def generate_demo_analysis():
+    """Генерация демо-данных для анализа Felix Pila"""
+    return {
+        "success": True,
+        "analysis": {
+            "by_weather": {
+                "sunny": {
+                    "field_1": [3, 7, 12, 16, 19],
+                    "field_2": [2, 8, 11, 15, 20]
+                },
+                "rainy": {
+                    "field_1": [1, 5, 9, 13, 17],
+                    "field_2": [4, 6, 10, 14, 18]
+                }
+            },
+            "by_temperature": {
+                "cold": {
+                    "field_1": [2, 6, 10, 14, 18],
+                    "field_2": [3, 7, 11, 15, 19]
+                },
+                "warm": {
+                    "field_1": [1, 4, 8, 12, 16],
+                    "field_2": [5, 9, 13, 17, 20]
+                }
+            },
+            "stats": {
+                "total_records": 150,
+                "analysis_based_on": "Демо-данные"
+            }
+        }
     }
 
 def generate_demo_weather():
-    # Генерация демо-данных о погоде
+    # Генерация демо-данных о погоде С НУЛЕВЫМИ ЗНАЧЕНИЯМИ
     return {
-        "temperature": 18.5,
-        "pressure": 1013,
-        "humidity": 65,
-        "weather_type": "ясно",
-        "wind_speed": 3.2,
-        "city": "Москва"
+        "temperature": 0.0,      # 0 градусов
+        "pressure": 0,           # 0 мм рт.ст.
+        "humidity": 0,           # 0%
+        "weather_type": "демо",  # метка что это демо
+        "wind_speed": 0.0,       # 0 м/с
+        "city": "Демо-город",
+        "is_demo": True          # флаг что это демо-данные
     }
+
+def parse_filters_from_request():
+    """Парсим фильтры из запроса"""
+    filters = {}
+    
+    # Погода
+    weather = request.args.get('weather')
+    if weather:
+        filters['weather'] = weather
+    
+    # Температура (диапазон)
+    temp = request.args.get('temp')
+    if temp:
+        try:
+            min_temp, max_temp = temp.split('_')
+            filters['temp_min'] = float(min_temp)
+            filters['temp_max'] = float(max_temp)
+        except:
+            pass
+    
+    # Влажность (диапазон)
+    humidity = request.args.get('humidity')
+    if humidity:
+        try:
+            min_hum, max_hum = humidity.split('_')
+            filters['humidity_min'] = int(min_hum)
+            filters['humidity_max'] = int(max_hum)
+        except:
+            pass
+    
+    # Давление (точное значение)
+    pressure = request.args.get('pressure')
+    if pressure:
+        try:
+            filters['pressure'] = int(pressure)
+        except:
+            pass
+    
+    # Скорость ветра (диапазон)
+    wind_speed = request.args.get('wind_speed')
+    if wind_speed:
+        try:
+            min_ws, max_ws = wind_speed.split('_')
+            filters['wind_speed_min'] = float(min_ws)
+            filters['wind_speed_max'] = float(max_ws)
+        except:
+            pass
+    
+    # Направление ветра
+    wind_dir = request.args.get('wind_dir')
+    if wind_dir:
+        filters['wind_direction'] = wind_dir
+    
+    # Фаза луны
+    moon = request.args.get('moon')
+    if moon:
+        filters['moon_phase'] = moon
+    
+    return filters
 
 def calculate_confidence(prediction):
     # Расчет уверенности в прогнозе  ====================================
@@ -916,7 +1416,20 @@ def get_top_weather_combinations(lottery_data, weather_data):
         {"weather": "облачно", "numbers": [2, 9, 16], "frequency": 10},
         {"weather": "туман", "numbers": [1, 8, 15], "frequency": 4},
         {"weather": "ветрено", "numbers": [4, 11, 19], "frequency": 6}
-    ]#================================================================================================================
+    ]
+
+def get_no_data_response(count, reason=""):
+    """Ответ когда данных нет после фильтрации"""
+    return jsonify({
+        "success": True,
+        "has_data": False,
+        "prediction": None,
+        "confidence": 0,
+        "filtered_count": count,
+        "note": f"Нет данных ({reason})" if reason else f"Нет данных ({count} записей)"
+    })
+
+# ==================== ФУНКЦИИ ПЛАНИРОВЩИКА ====================
 
 def job_lottery_with_weather():
     # Собирает лотерею и сразу привязывает текущую погоду
@@ -954,7 +1467,6 @@ def job_lottery_with_weather():
         return False
 
 def job_weather_only():
-    # Задача: сбор погоды
     print(f"🌤️ Сбор погоды: {datetime.now().strftime('%H:%M:%S')}")
     try:
         from src.parsers.weather_parser import WeatherParser
@@ -962,16 +1474,94 @@ def job_weather_only():
         weather = parser.get_current_weather()
         
         if weather:
-            # оба метода должны вызываться!
+            # Проверяем, не демо ли это (0 значения или есть флаг)
+            if (weather.get('temperature') == 0 or 
+                weather.get('is_demo') or 
+                weather.get('city') == 'Демо-город'):
+                print("⚠️ Получены демо-данные, пропускаем сохранение")
+                return
+            
             parser.save_weather_to_db(weather)
-            parser.update_latest_weather_to_lottery(weather)  # ← ЭТОГО НЕТ!
+            parser.update_latest_weather_to_lottery(weather)
             print(f"✅ Погода сохранена: {weather['temperature']}°C")
     except Exception as e:
-        print(f"❌ Ошибка сбора погоды: {e}") #====================================
+        print(f"❌ Ошибка сбора погоды: {e}")
+
+def scheduler_loop():
+    # Фоновый цикл планировщика
+    def job_lottery_with_weather():
+        """Задача: сбор лотереи и привязка погоды"""
+        print(f"\n⏰ Сбор лотереи+погоды: {datetime.now().strftime('%H:%M:%S')}")
+        
+        try:
+            # 1. Собираем лотерею
+            from src.parsers.lottery_parser import run_parser_sync
+            saved_count = run_parser_sync()
+            
+            if saved_count > 0:
+                print(f"✅ Лотерея: сохранено {saved_count} записей")
+            else:
+                print("⚠️ Лотерея: новых данных нет")
+            
+            # 2. Собираем погоду
+            from src.parsers.weather_parser import WeatherParser
+            parser = WeatherParser()
+            weather = parser.get_current_weather()
+            
+            if weather:
+                # Сохраняем в историю погоды
+                parser.save_weather_to_db(weather)
+                # Привязываем к последним тиражам
+                parser.update_latest_weather_to_lottery(weather)
+                print(f"🌤️ Погода: {weather['temperature']}°C в {weather['city']}")
+            
+        except Exception as e:
+            print(f"❌ Ошибка в задаче: {e}")
+
+    def job_weather_only():
+        # Задача: только сбор погоды
+        print(f"🌤️ Сбор погоды: {datetime.now().strftime('%H:%M:%S')}")
+        try:
+            from src.parsers.weather_parser import WeatherParser
+            parser = WeatherParser()
+            weather = parser.get_current_weather()
+            
+            if weather:
+                parser.save_weather_to_db(weather)
+                print(f"✅ Погода сохранена: {weather['temperature']}°C")
+        except Exception as e:
+            print(f"❌ Ошибка сбора погоды: {e}")
+
+    # НАСТРОЙКА РАСПИСАНИЯ
+    print("✅ Планировщик настроен. Расписание:")
+    
+    # Основные времена лотереи (с привязкой погоды)
+    lottery_times = ["10:00", "12:00", "13:00", "14:00", "16:00", "16:22", "18:00", "20:07", "22:00", "23:22"]
+    for t in lottery_times:
+        schedule.every().day.at(t).do(job_lottery_with_weather)
+        print(f"  • Лотерея+погода в {t}")
+    
+    # Погода каждые 30 минут (кроме времени лотереи)
+    for hour in range(8, 24):  # с 8:00 до 23:00
+        time_str = f"{hour:02d}:00"  # сразу создаем время с :00
+        if time_str not in lottery_times:
+            schedule.every().day.at(time_str).do(job_weather_only)
+    
+    # Бесконечный цикл планировщика
+    while True:
+        schedule.run_pending()
+        time.sleep(60)
+
+def start_background_scheduler():
+    """Запускает планировщик в фоновом режиме"""
+    import threading
+    scheduler_thread = threading.Thread(target=scheduler_loop, daemon=True)
+    scheduler_thread.start()
+    print("✅ Фоновый планировщик запущен")
 
 
+# ==================== CLI КОМАНДЫ ====================
 
-# CLI КОМАНДЫ (оставляем эти)
 @app.cli.command("create-db")
 def create_db_command():
     # Создать таблицы в базе данных
@@ -1033,82 +1623,7 @@ def init_project_command():
     print("🌐 Запустите: python app.py")
     print("📊 Откройте: http://localhost:5000")
 
-# ФОНГОВЫЙ ПЛАНИРОВЩИК
-
-def scheduler_loop():
-    # Фоновый цикл планировщика
-    def job_lottery_with_weather():
-        """Задача: сбор лотереи и привязка погоды"""
-        print(f"\n⏰ Сбор лотереи+погоды: {datetime.now().strftime('%H:%M:%S')}")
-        
-        try:
-            # 1. Собираем лотерею
-            from src.parsers.lottery_parser import run_parser_sync
-            saved_count = run_parser_sync()
-            
-            if saved_count > 0:
-                print(f"✅ Лотерея: сохранено {saved_count} записей")
-            else:
-                print("⚠️ Лотерея: новых данных нет")
-            
-            # 2. Собираем погоду
-            from src.parsers.weather_parser import WeatherParser
-            parser = WeatherParser()
-            weather = parser.get_current_weather()
-            
-            if weather:
-                # Сохраняем в историю погоды
-                parser.save_weather_to_db(weather)
-                # Привязываем к последним тиражам
-                parser.update_latest_weather_to_lottery(weather)
-                print(f"🌤️ Погода: {weather['temperature']}°C в {weather['city']}")
-            
-        except Exception as e:
-            print(f"❌ Ошибка в задаче: {e}")
-
-    def job_weather_only():
-        # Задача: только сбор погоды
-        print(f"🌤️ Сбор погоды: {datetime.now().strftime('%H:%M:%S')}")
-        try:
-            from src.parsers.weather_parser import WeatherParser
-            parser = WeatherParser()
-            weather = parser.get_current_weather()
-            
-            if weather:
-                parser.save_weather_to_db(weather)
-                print(f"✅ Погода сохранена: {weather['temperature']}°C")
-        except Exception as e:
-            print(f"❌ Ошибка сбора погоды: {e}")
-
-    # НАСТРОЙКА РАСПИСАНИЯ
-    print("✅ Планировщик настроен. Расписание:")
-    
-    # Основные времена лотереи (с привязкой погоды)
-    lottery_times = ["10:00", "12:00", "13:00", "14:00", "16:00", "16:22", "18:00", "20:07", "22:00", "23:22"]
-    for t in lottery_times:
-        schedule.every().day.at(t).do(job_lottery_with_weather)
-        print(f"  • Лотерея+погода в {t}")
-    
-    # Погода каждые 30 минут (кроме времени лотереи)
-    for hour in range(8, 24):  # с 8:00 до 23:00
-        for minute in [0, 30]:  # каждые 30 минут
-            time_str = f"{hour:02d}:{minute:02d}"
-            if time_str not in lottery_times:
-                schedule.every().day.at(time_str).do(job_weather_only)
-    
-    # Бесконечный цикл планировщика
-    while True:
-        schedule.run_pending()
-        time.sleep(60)
-
-def start_background_scheduler():
-    """Запускает планировщик в фоновом режиме"""
-    import threading
-    scheduler_thread = threading.Thread(target=scheduler_loop, daemon=True)
-    scheduler_thread.start()
-    print("✅ Фоновый планировщик запущен")
-
-# ОСНОВНОЙ БЛОК ЗАПУСКА=================================================================================================
+# ==================== ОСНОВНОЙ БЛОК ЗАПУСКА ====================
 
 if __name__ == '__main__':
     print("=" * 60)
